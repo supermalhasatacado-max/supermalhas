@@ -1,4 +1,10 @@
 import { env } from "cloudflare:workers";
+import {
+  supabaseDatabase,
+  usesSupabase,
+  migrateD1IfNeeded,
+} from "@/db/supabase";
+import type { StoreDatabase } from "@/db/store-database";
 import { getChatGPTUser } from "@/app/chatgpt-auth";
 import { defaultProducts, defaultSettings } from "./defaults";
 import { digits, validDocument, cartSchema } from "./validation";
@@ -19,13 +25,14 @@ export class ShopError extends Error {
     super(message);
   }
 }
-export function db() {
+export function db(): StoreDatabase {
+  if (usesSupabase()) return supabaseDatabase();
   if (!env.DB)
     throw new ShopError(
       "Banco de dados indisponível. Tente novamente em instantes.",
       503,
     );
-  return env.DB;
+  return env.DB as unknown as StoreDatabase;
 }
 export const now = () => new Date().toISOString();
 export const uid = () => crypto.randomUUID();
@@ -43,6 +50,7 @@ export async function seed() {
       .first()
   )
     return;
+  if (usesSupabase() && (await migrateD1IfNeeded())) return;
   await database.batch([
     ...defaultProducts.map((p) =>
       database
@@ -145,9 +153,7 @@ export function launchIssues(s: StoreSettings) {
     issues.push("Publicar políticas e termos da loja");
   return issues;
 }
-export async function cartItems(
-  input: unknown,
-): Promise<{
+export async function cartItems(input: unknown): Promise<{
   items: OrderItem[];
   subtotal: number;
   quantities: Map<string, number>;
@@ -205,7 +211,7 @@ export async function getDiscount(code: string, subtotal: number) {
     !row ||
     !row.active ||
     row.used >= row.usage_limit ||
-    (row.expires_at && row.expires_at < now())
+    (row.expires_at && new Date(row.expires_at).getTime() < Date.now())
   )
     throw new ShopError("Cupom inválido, expirado ou esgotado.");
   if (subtotal < row.minimum)

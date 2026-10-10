@@ -1,0 +1,9 @@
+# Copy to .dev.vars for a local preview. Never commit the completed file.
+DATABASE_PROVIDER=supabase
+SUPABASE_URL=https://ihjmwbyactdbltghundz.supabase.co
+SUPABASE_SECRET_KEY=
+# Enable only for the initial transfer from an existing D1 binding.
+SUPABASE_MIGRATE_D1=false
+ADMIN_EMAILS=k2publicidade2@gmail.com
+PAGARME_ENVIRONMENT=test
+PAGARME_SECRET_KEY=

@@ -1,21 +1,17 @@
-import { env } from "cloudflare:workers";
+import { getProductImage } from "@/lib/shop/storage";
 export const dynamic = "force-dynamic";
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
-  if (!/^[a-f0-9-]{36}$/.test(id) || !env.BUCKET)
-    return new Response(null, { status: 404 });
-  const object = await env.BUCKET.get(`products/${id}`);
-  if (!object) return new Response(null, { status: 404 });
-  return new Response(object.body, {
-    headers: {
-      "Content-Type":
-        object.httpMetadata?.contentType || "application/octet-stream",
-      "Cache-Control": "public, max-age=31536000, immutable",
-      "X-Content-Type-Options": "nosniff",
-      ETag: object.httpEtag,
-    },
-  });
+  if (!/^[a-f0-9-]{36}$/.test(id)) return new Response(null, { status: 404 });
+  try {
+    return (await getProductImage(id)) || new Response(null, { status: 404 });
+  } catch {
+    return Response.json(
+      { error: "Imagens temporariamente indisponíveis." },
+      { status: 503, headers: { "Cache-Control": "no-store" } },
+    );
+  }
 }

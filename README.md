@@ -14,6 +14,7 @@ A publicação inicial é privada, para revisão. O acesso de clientes e o receb
 
 - [Gestão da loja](docs/ADMIN.md)
 - [Configuração e homologação Pagar.me](docs/PAGAMENTOS.md)
+- [Banco e imagens no Supabase](docs/SUPABASE.md)
 - [Imagens e identidade visual](docs/ASSETS.md)
 - [Detalhes da plataforma](README.platform.md)
 
@@ -32,6 +33,7 @@ npm install
 node scripts/run-framework.mjs dev --hostname 127.0.0.1 --port 5186
 node node_modules/typescript/bin/tsc --noEmit
 node tests/commerce.mjs
+node tests/supabase.mjs
 node tests/http.mjs
 node scripts/run-framework.mjs build
 ```
@@ -40,8 +42,8 @@ node scripts/run-framework.mjs build
 
 ## Persistência e implantação
 
-Dados da loja, produtos, pedidos, cupons, perfis, atendimento e consentimentos ficam no Cloudflare D1. Fotos enviadas pelo administrador ficam no R2. Carrinho e favoritos ficam no navegador. Migrações versionadas em `drizzle/` são aplicadas pela plataforma antes da publicação; dados iniciais são criados no primeiro acesso.
+O backend suporta Supabase PostgreSQL e Storage privado, com migrações em `supabase/migrations/`, operações transacionais e importação do D1 existente. A troca ocorre ao configurar `DATABASE_PROVIDER=supabase` e as credenciais protegidas conforme [o guia Supabase](docs/SUPABASE.md). Até essa configuração, a publicação existente usa Cloudflare D1/R2. Carrinho e favoritos ficam no navegador. O histórico de migrações D1 em `drizzle/` permanece preservado.
 
-O fluxo Sites preserva `.openai/hosting.json` e publica uma versão do commit enviado. Segredos são configurados nas variáveis do servidor: `ADMIN_EMAILS`, `PAGARME_SECRET_KEY`, `PAGARME_ENVIRONMENT` e, opcionalmente, `RESEND_API_KEY`. Nunca incluir chaves no Git, arquivos públicos ou JavaScript do navegador.
+O fluxo Sites preserva `.openai/hosting.json` e publica uma versão do commit enviado. Segredos são configurados nas variáveis do servidor: `ADMIN_EMAILS`, `SUPABASE_SECRET_KEY`, `PAGARME_SECRET_KEY`, `PAGARME_ENVIRONMENT` e, opcionalmente, `RESEND_API_KEY`. Nunca incluir chaves no Git, arquivos públicos ou JavaScript do navegador.
 
 Preços, descontos, frete e somas de grade são recalculados no servidor. A aprovação depende de consulta autenticada ao Pagar.me; a página de retorno e o conteúdo recebido de um webhook não aprovam pagamentos. Reembolso financeiro é realizado no painel do Pagar.me, com sincronização na loja. A nota fiscal é emitida pelo serviço fiscal da empresa e seu link pode ser cadastrado no pedido.

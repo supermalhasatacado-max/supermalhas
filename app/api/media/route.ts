@@ -1,4 +1,4 @@
-import { env } from "cloudflare:workers";
+import { putProductImage } from "@/lib/shop/storage";
 import {
   requireAdmin,
   rateLimit,
@@ -14,8 +14,6 @@ export async function POST(request: Request) {
     await requireAdmin();
     await seed();
     await rateLimit(request, "image-upload", 10);
-    if (!env.BUCKET)
-      throw new ShopError("Armazenamento de imagens indisponível.", 503);
     const type = request.headers.get("content-type");
     if (!["image/jpeg", "image/png", "image/webp"].includes(type || ""))
       throw new ShopError("Escolha uma imagem JPG, PNG ou WebP.");
@@ -34,9 +32,7 @@ export async function POST(request: Request) {
     if (!valid)
       throw new ShopError("O arquivo não corresponde ao formato da imagem.");
     const id = uid();
-    await env.BUCKET.put(`products/${id}`, bytes, {
-      httpMetadata: { contentType: type! },
-    });
+    await putProductImage(id, bytes, type!);
     return Response.json(
       { url: `/api/media/${id}` },
       { headers: { "Cache-Control": "no-store" } },
