@@ -71,14 +71,10 @@ export function AccountPage() {
           <p>Pedidos, favoritos e informações em um só lugar.</p>
         </div>
         {data.user && (
-          <a
-            href="/signout-with-chatgpt?return_to=/"
-            target="_top"
-            className="text-link"
-          >
+          <form action="/auth/logout" method="post"><button type="submit" className="text-link">
             <LogOut size={16} />
             Sair da conta
-          </a>
+          </button></form>
         )}
       </div>
       <div className="account-layout">
@@ -123,12 +119,12 @@ export function AccountPage() {
                 </p>
               </span>
               <a
-                href="/signin-with-chatgpt?return_to=/minha-conta"
+                href="/entrar?return_to=/minha-conta"
                 target="_top"
                 className="btn dark"
               >
                 <UserRound size={17} />
-                Entrar com ChatGPT
+                Entrar na minha conta
               </a>
             </div>
           )}

@@ -1,4 +1,4 @@
-import { env } from "cloudflare:workers";
+import { env } from "@/lib/env";
 import statements from "./supabase-statements.json";
 import type { StoreDatabase, StoreStatement } from "./store-database";
 
@@ -24,7 +24,7 @@ const jsonColumns = new Set([
 
 export function usesSupabase() {
   const provider =
-    env.DATABASE_PROVIDER || (env.SUPABASE_URL ? "supabase" : "d1");
+    env.DATABASE_PROVIDER || "supabase";
   if (!["supabase", "d1"].includes(provider))
     throw new Error("DATABASE_PROVIDER inválido.");
   return provider === "supabase";
@@ -32,9 +32,12 @@ export function usesSupabase() {
 
 export function supabaseConfig() {
   const key = env.SUPABASE_SECRET_KEY || env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!env.SUPABASE_URL || !key)
+  const projectUrl = env.SUPABASE_URL || env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!projectUrl || !key)
     throw new Error("Credenciais do Supabase não configuradas no servidor.");
-  const url = new URL(env.SUPABASE_URL);
+  const url = new URL(projectUrl);
+  if (env.NEXT_PUBLIC_SUPABASE_URL && new URL(env.NEXT_PUBLIC_SUPABASE_URL).origin !== url.origin)
+    throw new Error("As configurações do Supabase devem apontar para o mesmo projeto.");
   if (
     url.protocol !== "https:" ||
     !/^[a-z0-9-]+\.supabase\.co$/.test(url.hostname) ||
@@ -50,7 +53,7 @@ export function supabaseConfig() {
 
 export async function supabaseFetch(path: string, init: RequestInit = {}) {
   if (
-    !/^\/(?:rest\/v1\/rpc\/sm_(?:database|import_d1)_v1$|storage\/v1\/object\/)/.test(
+    !/^\/(?:rest\/v1\/rpc\/sm_(?:database|import_d1)_v1$|storage\/v1\/bucket\/supermalhas-products$|storage\/v1\/object\/)/.test(
       path,
     )
   )
@@ -194,7 +197,7 @@ export async function migrateD1IfNeeded() {
     "rate_limits",
     "settings",
   ];
-  const results = await env.DB.batch<Record<string, unknown>>(
+  const results = await env.DB.batch(
     tables.map((table) =>
       env.DB!.prepare(`SELECT * FROM ${table} LIMIT 10001`),
     ),

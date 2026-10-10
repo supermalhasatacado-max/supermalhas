@@ -1,29 +1,33 @@
 {
-  "name": "site-creator-vinext-starter",
+  "name": "super-malhas-atacado",
   "version": "0.1.0",
   "private": true,
   "engines": {
-    "node": ">=22.13.0"
+    "node": "24.x"
   },
   "scripts": {
     "install:ci": "node scripts/install-ci.mjs",
-    "dev": "node scripts/run-framework.mjs dev",
-    "build": "node scripts/run-framework.mjs build",
-    "start": "node --import ./scripts/sites-env.mjs ./node_modules/wrangler/bin/wrangler.js dev --config dist/server/wrangler.json --local --persist-to .wrangler/state --ip 127.0.0.1 --inspector-port 0",
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "drizzle-kit generate",
-    "test:supabase": "node scripts/supabase-contract.mjs --check && node tests/supabase.mjs"
+    "test:supabase": "node scripts/supabase-contract.mjs --check && node tests/supabase.mjs",
+    "test": "npm run test:supabase && node tests/auth.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
     "@hookform/resolvers": "^5.7.1",
     "@shadcn/react": "^0.3.0",
+    "@supabase/ssr": "^0.12.7",
+    "@supabase/supabase-js": "^2.117.3",
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",
     "cmdk": "^1.1.1",
     "date-fns": "^4.4.0",
     "drizzle-orm": "0.45.2",
     "embla-carousel-react": "^8.6.0",
+    "esbuild": "^0.28.2",
     "input-otp": "^1.4.2",
     "lucide-react": "^1.31.0",
     "next": "16.3.4",
@@ -35,6 +39,7 @@
     "react-hook-form": "^7.85.0",
     "react-resizable-panels": "^4.12.2",
     "recharts": "^3.8.0",
+    "server-only": "^0.0.1",
     "sonner": "^2.0.8",
     "tailwind-merge": "3.6.0",
     "vaul": "^1.1.2",

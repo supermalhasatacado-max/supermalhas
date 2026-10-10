@@ -3,6 +3,8 @@ import "./globals.css";
 import { ShopProvider } from "@/components/shop/context";
 import { getSettings } from "@/lib/shop/server";
 import { defaultSettings } from "@/lib/shop/defaults";
+import { siteOrigin } from "@/lib/env";
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSettings().catch(() => defaultSettings);
@@ -14,9 +16,7 @@ export async function generateMetadata(): Promise<Metadata> {
     description:
       "Camisetas brancas em malha peruana no atacado. Pacotes de 200, 300 e 400 peças para revenda, uniformes e personalização.",
     robots: { index: settings.salesEnabled, follow: settings.salesEnabled },
-    metadataBase: new URL(
-      "https://super-malhas-atacado.loucassio.chatgpt.site",
-    ),
+    metadataBase: new URL(siteOrigin()),
     openGraph: {
       type: "website",
       locale: "pt_BR",
@@ -31,8 +31,9 @@ export async function generateMetadata(): Promise<Metadata> {
       ],
     },
     icons: {
-      icon: "/favicon.svg",
-      shortcut: "/favicon.svg",
+      icon: { url: "/images/logo.png", type: "image/png" },
+      shortcut: "/images/logo.png",
+      apple: "/images/logo.png",
     },
   };
 }

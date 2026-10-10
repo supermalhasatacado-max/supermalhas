@@ -1,0 +1,36 @@
+import assert from "node:assert/strict";
+import { build } from "esbuild";
+const compile = async (contents, plugins = []) => {
+  const result = await build({ stdin: { contents, resolveDir: process.cwd() }, bundle: true, write: false, platform: "node", format: "esm", plugins });
+  return import("data:text/javascript;base64," + Buffer.from(result.outputFiles[0].text).toString("base64"));
+};
+const config = await compile("export * from './lib/auth/config';");
+for (const path of ["https://evil.example", "//evil.example", "/\\evil.example", "/auth/callback", "/entrar", "/\r\nexample"]) assert.equal(config.safeReturnPath(path), "/minha-conta");
+assert.equal(config.safeReturnPath("/admin/pedidos?status=pending"), "/admin/pedidos?status=pending");
+assert.equal(config.safeReturnPath("/pedido/one#detalhes"), "/pedido/one#detalhes");
+assert.equal(config.authConfig(), null);
+process.env.NEXT_PUBLIC_SUPABASE_URL = "https://offline.supabase.co";
+process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY = "sb_secret_never_public";
+assert.throws(() => config.authConfig(), /inválida/);
+const jwt = role => "header." + Buffer.from(JSON.stringify({ role })).toString("base64url") + ".signature";
+process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY = jwt("service_role");
+assert.throws(() => config.authConfig(), /inválida/);
+process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY = jwt("anon");
+assert.equal(config.authConfig().url, "https://offline.supabase.co");
+process.env.NEXT_PUBLIC_SUPABASE_URL = "https://offline.supabase.co.evil.example";
+assert.throws(() => config.authConfig(), /inválida/);
+globalThis.__authResult = { data: { user: null }, error: null };
+const userModule = await compile("export * from './lib/auth/user';", [{ name: "auth-provider-fixture", setup(b) {
+  b.onResolve({ filter: /^server-only$/ }, () => ({ path: "empty", namespace: "fixture" }));
+  b.onResolve({ filter: /^\.\/server$/ }, () => ({ path: "server", namespace: "fixture" }));
+  b.onLoad({ filter: /.*/, namespace: "fixture" }, args => ({ contents: args.path === "empty" ? "" : "export async function serverAuth(){return {auth:{getUser:async()=>globalThis.__authResult}}}", loader: "js" }));
+} }]);
+assert.equal(await userModule.getStoreUser(), null);
+globalThis.__authResult = { data: { user: { id: "trusted-supabase-id", email: "owner@example.com", user_metadata: { full_name: "Owner" }, email_confirmed_at: "2026-10-10T00:00:00Z" } }, error: null };
+assert.deepEqual(await userModule.getStoreUser(), { userId: "trusted-supabase-id", email: "owner@example.com", fullName: "Owner", displayName: "Owner", emailVerified: true });
+globalThis.__authResult.error = { message: "Invalid session" };
+assert.equal(await userModule.getStoreUser(), null, "A rejected session must not become an authenticated customer");
+globalThis.__authResult.error = null;
+delete globalThis.__authResult.data.user.email_confirmed_at;
+assert.equal((await userModule.getStoreUser()).emailVerified, false);
+console.log("PASS: verified Supabase identity, rejected/absent sessions, email confirmation, safe redirects and public key restrictions.");

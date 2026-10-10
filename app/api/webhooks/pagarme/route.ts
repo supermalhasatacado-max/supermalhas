@@ -1,4 +1,6 @@
-import { env } from "cloudflare:workers";
+import { env } from "@/lib/env";
+export const runtime = "nodejs";
+export const maxDuration = 60;
 import { db, seed, rateLimit, ShopError } from "@/lib/shop/server";
 import { verifyProviderOrder } from "@/lib/shop/payments";
 export const dynamic = "force-dynamic";

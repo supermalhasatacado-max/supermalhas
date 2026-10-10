@@ -21,7 +21,6 @@ import {
   Search,
   Download,
   RefreshCw,
-  ShieldCheck,
   Mail,
   LogOut,
   Globe,
@@ -170,17 +169,15 @@ export function AdminPage() {
   if (!data.admin)
     return (
       <div className="admin-access">
-        <span>
-          <ShieldCheck size={35} />
-        </span>
+        <img className="admin-access-logo" src="/images/logo.png" alt="Super Malhas Atacado" width={1226} height={1283} />
         <h1>Painel da Super Malhas.</h1>
         <p>Acesse com a conta autorizada para administrar a loja.</p>
         <a
-          href="/signin-with-chatgpt?return_to=/admin"
+          href="/entrar?return_to=/admin"
           target="_top"
           className="btn primary"
         >
-          Entrar com ChatGPT <ArrowRight size={18} />
+          Entrar na administração <ArrowRight size={18} />
         </a>
         {data.user && (
           <ErrorBox message="Essa conta não tem acesso administrativo." />
@@ -213,7 +210,7 @@ export function AdminPage() {
     <div className="admin-app">
       <aside className="admin-sidebar">
         <Link href="/admin" className="admin-brand">
-          Super<span>malhas.</span>
+          <img src="/images/logo.png" alt="Super Malhas Atacado" width={1226} height={1283} />
           <small>ADMINISTRAÇÃO</small>
         </Link>
         <div className="admin-store-status">
@@ -1468,7 +1465,7 @@ function ProductEditor({
           />
           <div className="product-image-edit">
             <img src={p.image} alt="Prévia do produto" />
-            <Field label="Foto do produto" hint="JPG, PNG ou WebP. Até 5 MB.">
+            <Field label="Foto do produto" hint="JPG, PNG ou WebP. Até 4 MB.">
               <input
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
@@ -1476,6 +1473,7 @@ function ProductEditor({
                 onChange={async (e) => {
                   const file = e.target.files?.[0];
                   if (!file) return;
+                  if (file.size > 4 * 1024 * 1024) { setError("A imagem deve ter até 4 MB."); e.target.value = ""; return; }
                   setBusy(true);
                   setError("");
                   try {

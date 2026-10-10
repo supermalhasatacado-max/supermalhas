@@ -59,7 +59,7 @@ export function Header() {
             className="brand"
             aria-label="Super Malhas Atacado — Início"
           >
-            <img src="/images/logo.png" alt="Super Malhas Atacado" />
+            <img src="/images/logo.png" alt="Super Malhas Atacado" width={1226} height={1283} />
           </Link>
           <form
             className="search-form"
@@ -211,8 +211,7 @@ export function Footer() {
         <div className="container footer-grid">
           <div className="footer-intro">
             <Link href="/" className="footer-wordmark">
-              Super<span>malhas.</span>
-              <small>ATACADO</small>
+              <img src="/images/logo.png" alt="Super Malhas Atacado" width={1226} height={1283} />
             </Link>
             <p>
               Malha de qualidade.

@@ -17,11 +17,11 @@ export async function POST(request: Request) {
     const type = request.headers.get("content-type");
     if (!["image/jpeg", "image/png", "image/webp"].includes(type || ""))
       throw new ShopError("Escolha uma imagem JPG, PNG ou WebP.");
-    if (Number(request.headers.get("content-length")) > 5 * 1024 * 1024)
-      throw new ShopError("A imagem deve ter até 5 MB.", 413);
+    if (Number(request.headers.get("content-length")) > 4 * 1024 * 1024)
+      throw new ShopError("A imagem deve ter até 4 MB.", 413);
     const bytes = new Uint8Array(await request.arrayBuffer());
-    if (bytes.length < 16 || bytes.length > 5 * 1024 * 1024)
-      throw new ShopError("A imagem deve ter até 5 MB.", 413);
+    if (bytes.length < 16 || bytes.length > 4 * 1024 * 1024)
+      throw new ShopError("A imagem deve ter até 4 MB.", 413);
     const valid =
       type === "image/jpeg"
         ? bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255

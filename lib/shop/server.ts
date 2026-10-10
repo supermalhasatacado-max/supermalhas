@@ -1,11 +1,11 @@
-import { env } from "cloudflare:workers";
+import { env } from "@/lib/env";
 import {
   supabaseDatabase,
   usesSupabase,
   migrateD1IfNeeded,
 } from "@/db/supabase";
 import type { StoreDatabase } from "@/db/store-database";
-import { getChatGPTUser } from "@/app/chatgpt-auth";
+import { getStoreUser } from "@/lib/auth/user";
 import { defaultProducts, defaultSettings } from "./defaults";
 import { digits, validDocument, cartSchema } from "./validation";
 import type {
@@ -94,9 +94,8 @@ export async function getProducts(all = false): Promise<Product[]> {
   );
 }
 export async function isAdmin() {
-  const user = await getChatGPTUser();
-  if (!user) return false;
-  if (import.meta.env.DEV && user.userId === "local_seedy") return true;
+  const user = await getStoreUser();
+  if (!user || !user.emailVerified) return false;
   return (env.ADMIN_EMAILS || "")
     .split(",")
     .map((x) => x.trim().toLowerCase())
@@ -122,7 +121,7 @@ export function sandboxEnabled(s: StoreSettings) {
   );
 }
 export async function claimGuestOrders(request: Request) {
-  const user = await getChatGPTUser();
+  const user = await getStoreUser();
   const token = request.headers
     .get("cookie")
     ?.match(/(?:^|;\s*)sm_guest=([a-f0-9]{64})(?:;|$)/)?.[1];
@@ -258,7 +257,7 @@ export function shippingQuotes(
   return rows;
 }
 export async function owner(request: Request) {
-  const user = await getChatGPTUser();
+  const user = await getStoreUser();
   if (user)
     return { key: `user:${user.userId}`, userId: user.userId, cookie: null };
   const cookie = request.headers
@@ -276,10 +275,9 @@ export async function owner(request: Request) {
 }
 export async function rateLimit(request: Request, scope: string, limit = 20) {
   const bucket = Math.floor(Date.now() / 60000);
-  const identity =
-    request.headers.get("cf-connecting-ip") ||
-    request.headers.get("oai-authenticated-user-id") ||
-    "local";
+  const user = await getStoreUser();
+  const identity = (env.VERCEL ? request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() : request.headers.get("cf-connecting-ip")) ||
+    user?.userId || request.headers.get("cookie")?.match(/(?:^|;\s*)sm_guest=([a-f0-9]{64})(?:;|$)/)?.[1] || "local";
   const id = await hash(`${scope}:${identity}:${bucket}`);
   const r = await db()
     .prepare(

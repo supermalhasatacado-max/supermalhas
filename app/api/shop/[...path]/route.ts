@@ -1,6 +1,7 @@
 import { z } from "zod";
-import { env } from "cloudflare:workers";
-import { getChatGPTUser } from "@/app/chatgpt-auth";
+import { after } from "next/server";
+import { env } from "@/lib/env";
+import { getStoreUser } from "@/lib/auth/user";
 import {
   seed,
   db,
@@ -41,8 +42,11 @@ import {
   syncOrder,
   sendOrderEmail,
   cancelUnpaidOrder,
+  reconcileExpiredOrders,
 } from "@/lib/shop/payments";
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+export const maxDuration = 60;
 
 async function handle(request: Request) {
   try {
@@ -53,6 +57,10 @@ async function handle(request: Request) {
     let data: any;
     let cookie: string | null = null;
     if (method === "GET" && path === "bootstrap") {
+      if (env.PAGARME_SECRET_KEY) after(async () => {
+        try { await reconcileExpiredOrders(); }
+        catch { console.error("Não foi possível reconciliar reservas pendentes."); }
+      });
       await claimGuestOrders(request);
       const settings = await getSettings(),
         admin = await isAdmin();
@@ -62,7 +70,7 @@ async function handle(request: Request) {
       data = {
         products: await getProducts(),
         settings: admin ? settings : { ...publicSettings, fiscalEmail: "" },
-        user: await getChatGPTUser(),
+        user: await getStoreUser(),
         admin,
         paymentReady: !!env.PAGARME_SECRET_KEY,
         paymentEnvironment: paymentEnvironment(),
@@ -157,7 +165,7 @@ async function handle(request: Request) {
       await cancelUnpaidOrder(id, new URL(request.url).origin);
       data = await getOrder(id, request);
     } else if (path === "profile") {
-      const user = await getChatGPTUser();
+      const user = await getStoreUser();
       if (!user)
         throw new ShopError("Entre na sua conta para salvar seus dados.", 401);
       if (method === "GET") {

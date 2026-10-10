@@ -27,7 +27,7 @@ class Statement {
     return { meta: { changes: Number(r.changes) } };
   }
 }
-globalThis.__shopEnv = {
+globalThis.__shopEnv = { DATABASE_PROVIDER: "d1",
   DB: {
     prepare: (query) => new Statement(query),
     batch(statements) {
@@ -60,11 +60,11 @@ const compiled = await build({
     {
       name: "offline-fixtures",
       setup(b) {
-        b.onResolve({ filter: /^cloudflare:workers$/ }, () => ({
+        b.onResolve({ filter: /^@\/lib\/env$/ }, () => ({
           path: "env",
           namespace: "fixture",
         }));
-        b.onResolve({ filter: /^@\/app\/chatgpt-auth$/ }, () => ({
+        b.onResolve({ filter: /^@\/lib\/auth\/user$/ }, () => ({
           path: "auth",
           namespace: "fixture",
         }));
@@ -72,7 +72,7 @@ const compiled = await build({
           contents:
             a.path === "env"
               ? "export const env=globalThis.__shopEnv"
-              : "export async function getChatGPTUser(){return globalThis.__shopUser}",
+              : "export async function getStoreUser(){return globalThis.__shopUser}",
           loader: "js",
         }));
       },
