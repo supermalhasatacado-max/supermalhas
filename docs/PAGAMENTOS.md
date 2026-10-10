@@ -23,14 +23,14 @@ As bases oficiais utilizadas são `https://sdx-api.pagar.me/core/v5` e `https://
 1. Configurar a chave de teste e o ambiente `test`, mantendo vendas reais desativadas e testes permitidos.
 2. Executar uma compra de teste de cada forma de pagamento no checkout hospedado. Para cartão, seguir os dados de aprovação e recusa oficiais do Pagar.me. Não usar dados financeiros reais no sandbox.
 3. Confirmar retorno ao pedido, notificações, aprovação, recusa, duplicidade de notificação, cancelamento e estorno. Conferir o valor final das parcelas na página do provedor.
-4. Após homologação, configurar chave e ambiente de produção, revisar o contrato comercial Pagar.me, preencher a operação no painel e abrir a audiência da loja para clientes.
+4. Após homologação, configurar chave e ambiente de produção, revisar o contrato comercial Pagar.me, preencher a operação no painel e conferir a publicação no domínio oficial.
 5. Cadastrar o webhook público abaixo no dashboard Pagar.me e validar seu recebimento antes de ativar vendas.
 
 ```text
-https://super-malhas-atacado.loucassio.chatgpt.site/api/webhooks/pagarme
+https://supermalhasatacado.com.br/api/webhooks/pagarme
 ```
 
-Na publicação privada, notificações de terceiros podem ser bloqueadas pela proteção de acesso. A audiência pública é necessária no lançamento para clientes e webhooks. A consulta autenticada pelo botão de atualização funciona sem depender da notificação.
+Na Vercel, esse endpoint deve permanecer acessível ao Pagar.me; não habilitar proteção de deployment que bloqueie a loja de produção ou o webhook. A consulta autenticada pelo botão de atualização funciona sem depender da notificação.
 
 Eventos tratados: eventos `order.*` com `data.id` e eventos de cobrança com `data.order.id`. Assine aprovação, falha, cancelamento, estorno e contestação. O handler consulta o pedido na API autenticada, valida código local, ambiente, moeda e valores permitidos e só então atualiza a loja. O corpo do webhook nunca é fonte de aprovação. Um retorno do checkout também não confirma pagamento.
 
@@ -38,7 +38,7 @@ Se o serviço ficar indisponível, o pedido é preservado e oferece preparação
 
 ## Estado de validação
 
-Concluídos: TypeScript, build, testes HTTP locais, testes de lógica com SQLite/provedor simulados e compra demonstrativa no navegador em desktop/celular. A homologação com a API real, notificações e dados de teste do Pagar.me permanece pendente da chave. Nenhuma cobrança real foi executada.
+Validação local: TypeScript, build Next.js, autenticação e testes de PostgreSQL/PGlite com provedor simulado. O teste HTTP atual verifica a publicação Vercel selecionada sem alterar estoque/configurações. A homologação com a API real, notificações e dados de teste do Pagar.me permanece pendente da chave. Nenhuma cobrança real foi executada.
 
 ## Referências oficiais
 

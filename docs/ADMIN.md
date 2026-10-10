@@ -1,15 +1,15 @@
 # Guia de gestão da Super Malhas
 
-Entre em `/admin` com a conta ChatGPT autorizada. O servidor verifica a autorização em todas as operações. A conta de demonstração local não existe na publicação.
+Entre em `/admin` com sua conta da loja, autenticada pelo Supabase e com e-mail confirmado. O servidor verifica a autorização em todas as operações. A conta do dashboard Supabase não cria automaticamente uma conta de cliente; faça o cadastro pela loja.
 
 ## Configurar a operação
 
 1. **Dados da empresa:** revise razão social, CNPJ, telefone, endereço e CEP de origem. Cadastre e-mail de atendimento, WhatsApp e horário. O e-mail fiscal permanece separado do contato público. O nome fantasia cadastral ANABELA BOUTIQUE foi informado pela empresa; a marca comercial desta vitrine é SUPER MALHAS ATACADO.
-2. **Produtos e estoque:** informe o estoque disponível em pacotes, preços, descrições, características e fotos. Use o envio de imagem para JPG, PNG ou WebP de até 5 MB. Publique ou oculte produtos e escolha os destaques.
+2. **Produtos e estoque:** informe o estoque disponível em pacotes, preços, descrições, características e fotos. Use o envio de imagem para JPG, PNG ou WebP de até 4 MB. Publique ou oculte produtos e escolha os destaques.
 3. **Frete e entrega:** cadastre nome do serviço, estados atendidos, preço, prazo mínimo/máximo e eventual frete grátis por valor. São regras comerciais definidas por você; o cálculo não consulta uma transportadora. Publique a tabela de medidas reais.
 4. **Políticas e conteúdo:** escreva os textos oficiais de entrega, trocas, privacidade, termos e apresentação da empresa. As políticas iniciais estão aguardando estes textos.
 5. **Pagamentos:** confira o ambiente, validade de Pix e boleto e as condições de parcelamento. A chave é configurada no ambiente protegido do servidor. Consulte `PAGAMENTOS.md`.
-6. **Preparar lançamento:** confirme estoque, revise as pendências e ative as vendas. A ativação é recusada se faltar chave de produção, dados fiscais válidos, atendimento, frete, estoque confirmado ou políticas. A audiência da loja deve ser aberta aos clientes no lançamento.
+6. **Preparar lançamento:** confirme estoque, revise as pendências e ative as vendas. A ativação é recusada se faltar chave de produção, dados fiscais válidos, atendimento, frete, estoque confirmado ou políticas. A publicação na Vercel usa o domínio oficial.
 
 ## Pedidos
 
@@ -37,4 +37,4 @@ O cliente pode comprar como visitante. Ao entrar na conta no mesmo navegador, se
 
 ## Acessos administrativos
 
-Administradores são definidos por e-mail na variável protegida `ADMIN_EMAILS`, separados por vírgula. O acesso inicial está configurado para `k2publicidade2@gmail.com`. Outros clientes não podem alterar preços, estoque, pedidos ou configurações.
+Administradores são definidos por e-mail na variável protegida `ADMIN_EMAILS`, separados por vírgula. Os administradores autorizados são `k2publicidade2@gmail.com` e `supermalhasatacado@gmail.com`; ambos precisam de conta da loja e e-mail confirmado. Outros clientes não podem alterar preços, estoque, pedidos ou configurações.

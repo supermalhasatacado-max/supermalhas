@@ -1,9 +1,10 @@
 import { getSettings, getProducts, seed } from "@/lib/shop/server";
+import { siteOrigin } from "@/lib/env";
 export const dynamic = "force-dynamic";
-export async function GET(request: Request) {
+export async function GET() {
   await seed();
   const s = await getSettings(),
-    origin = new URL(request.url).origin;
+    origin = siteOrigin();
   const escape = (v: string) =>
     v.replace(
       /[&<>"']/g,

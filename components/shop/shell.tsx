@@ -36,6 +36,7 @@ export function Header() {
     router = useRouter();
   const [search, setSearch] = useState(""),
     [menu, setMenu] = useState(false);
+  const packageCount = cart.reduce((s, i) => s + i.quantity, 0);
   useEffect(() => setMenu(false), [path]);
   return (
     <>
@@ -93,11 +94,11 @@ export function Header() {
           <Link
             href="/carrinho"
             className="header-action cart-link"
-            aria-label={`Meu carrinho, ${cart.reduce((s, i) => s + i.quantity, 0)} pacotes`}
+            aria-label={`Meu carrinho, ${packageCount} ${packageCount === 1 ? "pacote" : "pacotes"}`}
           >
             <span className="cart-icon">
               <ShoppingBag size={25} />
-              <b>{cart.reduce((s, i) => s + i.quantity, 0)}</b>
+              <b>{packageCount}</b>
             </span>
             <span>
               Seu próximo passo<strong>Meu carrinho</strong>

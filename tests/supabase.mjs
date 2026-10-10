@@ -98,6 +98,19 @@ const shop = await import(
   "data:text/javascript;base64," +
     Buffer.from(compiled.outputFiles[0].text).toString("base64")
 );
+// Admin access requires a verified identity and an explicit email allowlist.
+globalThis.__shopEnv.ADMIN_EMAILS = " owner@example.com , SECOND@example.com ";
+assert.equal(await shop.isAdmin(), false);
+globalThis.__shopUser = { userId: "test-owner", email: "owner@example.com", emailVerified: false };
+assert.equal(await shop.isAdmin(), false);
+globalThis.__shopUser.emailVerified = true;
+assert.equal(await shop.isAdmin(), true);
+globalThis.__shopUser.email = "second@example.com";
+assert.equal(await shop.isAdmin(), true);
+globalThis.__shopUser.email = "customer@example.com";
+assert.equal(await shop.isAdmin(), false);
+globalThis.__shopUser = null;
+delete globalThis.__shopEnv.ADMIN_EMAILS;
 let provider, payload;
 const photos = new Map(),
   executed = new Set();

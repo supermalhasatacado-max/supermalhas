@@ -101,11 +101,12 @@ export function Summary({
   shipping?: ShippingQuote | null;
   children?: React.ReactNode;
 }) {
+  const packageCount = items.reduce((n, i) => n + i.quantity, 0);
   return (
     <aside className="order-summary">
       <div className="summary-heading">
         <h2>Resumo do pedido</h2>
-        <span>{items.reduce((n, i) => n + i.quantity, 0)} pacotes</span>
+        <span>{packageCount} {packageCount === 1 ? "pacote" : "pacotes"}</span>
       </div>
       <div className="summary-items">
         {items.map((i, index) => (
@@ -114,7 +115,7 @@ export function Summary({
             <span>
               <strong>{i.title}</strong>
               <small>
-                {i.quantity} pacote(s) · {i.pieces * i.quantity} peças
+                {i.quantity} {i.quantity === 1 ? "pacote" : "pacotes"} · {i.pieces * i.quantity} peças
               </small>
               <GradeSummary grade={i.grade} />
             </span>
