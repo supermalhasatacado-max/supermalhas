@@ -30,6 +30,8 @@ O login e a recuperação de senha usam Supabase Auth com `@supabase/ssr`, cooki
 
 Administradores precisam ter e-mail confirmado e constar em `ADMIN_EMAILS`. Os pedidos são acessíveis ao dono da sessão/cookie visitante ou ao administrador. Entrar na conta no mesmo navegador vincula os pedidos daquele visitante.
 
+Em Sign In / Providers → Email, o tamanho mínimo de senha está configurado como **10 caracteres**, alinhado aos formulários de cadastro e recuperação da loja. Novos cadastros estão permitidos e a confirmação de e-mail permanece obrigatória.
+
 No dashboard, Authentication → URL Configuration:
 
 - Site URL: `https://supermalhasatacado.com.br`.
