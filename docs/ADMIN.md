@@ -27,7 +27,7 @@ Ao abrir a loja, a manutenção em segundo plano confere até três reservas ven
 
 As mensagens do formulário ficam em **Atendimento**. Responda pelo canal de contato do cliente e marque a solicitação como resolvida. Cadastros de novidades podem ser exportados; disparos de campanhas não são automáticos.
 
-E-mails transacionais são opcionais e utilizam Resend. Para ativá-los, configure uma chave do serviço e um domínio de remetente verificado. Os avisos de pagamento e postagem só são enviados quando o serviço está disponível; testes não enviam e-mails financeiros.
+O Resend está conectado ao domínio oficial, com a chave privada na Vercel e o remetente `Super Malhas Atacado <noreply@supermalhasatacado.com.br>` nas configurações da loja. Os avisos de pagamento e postagem só são enviados quando o serviço está disponível; testes não enviam e-mails financeiros. Os e-mails de confirmação e recuperação usam o SMTP Resend no Supabase. Consulte [EMAILS.md](EMAILS.md) para configuração, modelos e validação.
 
 ## Testar a experiência
 

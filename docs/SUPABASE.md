@@ -39,7 +39,7 @@ No dashboard, Authentication → URL Configuration:
 
 O wildcard fica restrito ao caminho de retorno da loja. A aplicação valida `return_to` para impedir retornos para domínios externos. `/auth/confirm` também aceita templates com TokenHash para confirmação sem depender do navegador original.
 
-É necessário um SMTP configurado para confirmar cadastros e recuperar senhas dos clientes. O SMTP padrão do Supabase aceita somente endereços da equipe do projeto e não é o serviço de produção. Configure um remetente verificado, SPF/DKIM e o SMTP do provedor em Authentication → Emails → SMTP Settings. Preserve a confirmação de e-mail.
+O SMTP de produção foi conectado ao Resend, com domínio verificado, porta 465/TLS e remetente `noreply@supermalhasatacado.com.br`. Os modelos de confirmação e recuperação foram aplicados em português e usam `/auth/confirm` com TokenHash. Consulte [a configuração e a evidência dos e-mails](EMAILS.md). A confirmação de e-mail continua obrigatória. O SMTP padrão do Supabase, limitado à equipe do projeto, não é usado para os e-mails de produção.
 
 ## Migrações e recuperação
 

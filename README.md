@@ -48,6 +48,7 @@ A versão anterior em `chatgpt.site` e os arquivos históricos do Sites/D1 perma
 
 - [Administração](docs/ADMIN.md)
 - [Supabase e autenticação](docs/SUPABASE.md)
+- [E-mails Resend](docs/EMAILS.md)
 - [Pagamentos Pagar.me](docs/PAGAMENTOS.md)
 - [Imagens](docs/ASSETS.md)
 
