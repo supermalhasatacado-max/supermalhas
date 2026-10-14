@@ -10,6 +10,8 @@ import {
   decodeOrder,
 } from "./server";
 import type { Order, StoreSettings } from "./types";
+import { installmentTotals } from "./payment-options";
+export { installmentTotals } from "./payment-options";
 
 class PagarmeError extends ShopError {
   constructor(public definiteRejection: boolean) {
@@ -17,15 +19,6 @@ class PagarmeError extends ShopError {
   }
 }
 
-export function installmentTotals(total: number, s: StoreSettings) {
-  return Array.from({ length: s.maxInstallments }, (_, i) => ({
-    number: i + 1,
-    total:
-      i + 1 <= s.freeInstallments
-        ? total
-        : Math.round(total * (1 + (s.installmentInterest / 100) * (i + 1))),
-  }));
-}
 export async function pagarme(
   path: string,
   body?: unknown,
@@ -274,7 +267,7 @@ export async function verifyProviderOrder(providerId: string, hookId?: string) {
   const order = decodeOrder(raw);
   const allowed =
     order.payment_method === "credit_card"
-      ? order.payment_config?.installments.map((x) => x.total) || [order.total]
+      ? order.payment_config?.installments.filter(x => order.payment_config?.checkout !== "transparent" || x.number === order.payment_config.selectedInstallments).map((x) => x.total) || [order.total]
       : [order.total];
   if (
     !allowed.includes(Number(provider.amount)) ||
@@ -432,6 +425,8 @@ export async function cancelUnpaidOrder(id: string, origin: string) {
       409,
     );
   if (!raw!.provider_link_id) {
+    if (decodeOrder(raw!).payment_config?.checkout === "transparent")
+      throw new ShopError("Solicite o cancelamento ao atendimento para conferir a cobrança com o Pagar.me.", 409);
     await createPaymentLink(decodeOrder(raw!), origin);
     raw = await db()
       .prepare("SELECT * FROM orders WHERE id=?")

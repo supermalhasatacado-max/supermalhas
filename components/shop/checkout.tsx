@@ -41,6 +41,9 @@ import {
   WhatsApp,
 } from "./ui";
 import { Summary, CouponInput } from "./cart";
+import { CardFields, tokenizeCard } from "./transparent-payment";
+import { OrderPage } from "./account";
+import { installmentTotals } from "@/lib/shop/payment-options";
 const initialCustomer: Customer = {
   type: "individual",
   name: "",
@@ -72,7 +75,10 @@ export function CheckoutPage() {
     [cepBusy, setCepBusy] = useState(false),
     [method, setMethod] = useState("pix"),
     [accepted, setAccepted] = useState(false),
-    [saveProfile, setSaveProfile] = useState(false);
+    [saveProfile, setSaveProfile] = useState(false),
+    [installments, setInstallments] = useState(1),
+    [completedId, setCompletedId] = useState("");
+  const paymentForm = useRef<HTMLFormElement>(null);
   const requestKey = useRef("");
   useEffect(() => {
     requestKey.current = crypto.randomUUID();
@@ -186,6 +192,7 @@ export function CheckoutPage() {
     }
     setBusy(true);
     try {
+      const cardToken = data.transparentCheckout && method === "credit_card" ? await tokenizeCard(paymentForm.current!, data.pagarmePublicKey) : undefined;
       if (saveProfile && data.user) await api("profile", { customer, address });
       const order = await api<Order>("checkout", {
         items: cart,
@@ -197,7 +204,9 @@ export function CheckoutPage() {
         requestKey: requestKey.current,
         termsAccepted: true,
         demo: false,
+        ...(data.transparentCheckout ? { payment: { ...(cardToken ? { cardToken } : {}), installments: method === "credit_card" ? installments : 1 } } : {}),
       });
+      if (data.transparentCheckout) { setCompletedId(order.id); clear(); return; }
       clear();
       if (order.payment_link) window.location.assign(order.payment_link);
       else router.push(`/pedido/${order.id}`);
@@ -207,6 +216,7 @@ export function CheckoutPage() {
       setBusy(false);
     }
   };
+  if (completedId) return <OrderPage id={completedId} />;
   if (!ready)
     return (
       <div className="container section">
@@ -277,7 +287,7 @@ export function CheckoutPage() {
               ),
             )}
           </div>
-          <form onSubmit={submit} className="checkout-form">
+          <form ref={paymentForm} onSubmit={submit} className="checkout-form">
             {step === 0 ? (
               <section className="form-panel">
                 <h2>
@@ -616,7 +626,7 @@ export function CheckoutPage() {
                           : "Receba seu boleto em um ambiente protegido."}
                     </h3>
                     <p>
-                      {method === "pix"
+                      {data.transparentCheckout ? method === "pix" ? `O QR Code e o código Pix serão exibidos aqui após confirmar o pedido, com validade de ${data.settings.pixMinutes} minutos.` : method === "boleto" ? `O boleto e a linha digitável serão exibidos aqui após confirmar o pedido, com vencimento em ${data.settings.boletoDays} dias.` : "Preencha seu cartão abaixo. Os dados serão protegidos diretamente pelo Pagar.me." : method === "pix"
                         ? `O código Pix será gerado na etapa protegida do Pagar.me e terá validade de ${data.settings.pixMinutes} minutos. O pedido será aprovado após a confirmação do pagamento.`
                         : method === "credit_card"
                           ? `Os dados do cartão serão informados diretamente no Pagar.me. Até ${data.settings.freeInstallments}x sem juros. As demais opções e o valor final serão exibidos antes de pagar.`
@@ -627,6 +637,13 @@ export function CheckoutPage() {
                       Dados financeiros processados diretamente pelo Pagar.me.
                     </span>
                   </div>
+                  {data.transparentCheckout && method === "credit_card" && <>
+                    <CardFields />
+                    <Field label="Parcelamento"><select value={installments} onChange={e => setInstallments(Number(e.target.value))}>
+                      {installmentTotals(subtotal - discount + (selectedShipping?.amount || 0), data.settings).map(p => <option key={p.number} value={p.number}>{p.number}x de até {money(Math.ceil(p.total / p.number))} · total {money(p.total)}{p.number <= data.settings.freeInstallments ? " sem juros" : " com juros"}</option>)}
+                    </select></Field>
+                    <p>Total no cartão: <strong>{money(installmentTotals(subtotal - discount + (selectedShipping?.amount || 0), data.settings).find(p => p.number === installments)?.total || subtotal)}</strong></p>
+                  </>}
                 </section>
                 <section className="form-panel review-panel">
                   <h2>Tudo certo para seguir?</h2>
@@ -705,7 +722,7 @@ export function CheckoutPage() {
                   ? "Continuar para entrega"
                   : step === 1
                     ? "Escolher pagamento"
-                    : "Ir para o pagamento seguro"}
+                    : data.transparentCheckout ? method === "credit_card" ? "Pagar com cartão" : method === "pix" ? "Gerar Pix" : "Gerar boleto" : "Ir para o pagamento seguro"}
                 {step === 2 ? (
                   <LockKeyhole size={17} />
                 ) : (

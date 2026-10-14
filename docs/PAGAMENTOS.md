@@ -2,7 +2,13 @@
 
 ## Integração preparada
 
-A loja utiliza a API v5 para criar um checkout hospedado por pedido. Pix, boleto e cartão são selecionados na loja; dados financeiros são preenchidos diretamente na página Pagar.me. Não é necessária uma chave pública para este fluxo e a loja não coleta número de cartão ou CVV.
+A loja suporta checkout transparente pela API v5 de pedidos. Pix e boleto são exibidos dentro da loja; o cartão é tokenizado diretamente pelo navegador na API Pagar.me, usando a chave pública. O servidor recebe somente o token temporário, converte-o em `card_id` vinculado ao comprador e cria o pedido, compatível com o fluxo PSP. PAN e CVV não são enviados ao servidor da loja, a logs, eventos ou banco de dados. O checkout hospedado é preservado para pedidos anteriores e como configuração alternativa.
+
+Para ativar o novo fluxo, configure `PAGARME_CHECKOUT_MODE=transparent` e `PAGARME_PUBLIC_KEY=pk_...` da mesma conta na Vercel e republique. `hosted` mantém o fluxo anterior. O modo, as parcelas e os totais ficam congelados no pedido, portanto uma mudança de configuração não troca a modalidade de pedidos existentes. A chave pública pode ser exposta ao navegador; a chave secreta continua exclusiva do servidor. A autorização do domínio deve ser conferida no Pagar.me.
+
+O cliente recebe QR Code/copia e cola do Pix, linha digitável e link de boleto, ou o estado de confirmação do cartão, na própria página. A consulta periódica do pedido confirma o pagamento pela API autenticada. A confirmação por webhook continua recomendada; o recebimento real de notificações ainda depende de cadastro e validação no painel do provedor.
+
+A criação direta também usa uma trava durável por pedido. Uma resposta perdida não autoriza outra cobrança: a loja procura o pedido pelo código antes de prosseguir. Os tokens não são persistidos. Recusas de cartão liberam a reserva de estoque; cancelamentos de cobranças diretas emitidas são encaminhados ao atendimento para conferência no Pagar.me, evitando estornos involuntários de pagamentos recebidos durante um cancelamento.
 
 O servidor transmite o total em centavos, incluindo frete com valor definido e cupom. Na modalidade a combinar, o transporte é explicitamente pago à parte e fica fora do total dos produtos; valor e prazo devem ser combinados com o SAC antes do pagamento. Cada link permite um pedido e uma aprovação. Preços, grade, condições de parcelamento, validade e endereço ficam registrados no pedido. Alterações futuras no painel não modificam condições anteriores.
 
@@ -14,6 +20,8 @@ O endpoint `/paymentlinks` foi observado criando links diferentes para POSTs com
 | --- | --- |
 | `PAGARME_SECRET_KEY` | Chave secreta da conta; apenas no servidor. |
 | `PAGARME_ENVIRONMENT` | `test` para sandbox; `production` para cobrança real. |
+| `PAGARME_CHECKOUT_MODE` | `transparent` para pagamento na loja; `hosted` para checkout hospedado. |
+| `PAGARME_PUBLIC_KEY` | Chave pública `pk_...` da mesma conta, usada exclusivamente para tokenização no navegador. |
 | `ADMIN_EMAILS` | Administradores autorizados. |
 | `PAGARME_WEBHOOK_SECRET` | Opcional, somente se as notificações incluírem `x-webhook-secret` com o valor configurado. |
 | `RESEND_API_KEY` | Opcional, envio de e-mails após pagamento e postagem. |

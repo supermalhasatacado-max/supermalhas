@@ -17,6 +17,7 @@ import {
   sandboxEnabled,
 } from "./server";
 import { createPaymentLink, installmentTotals } from "./payments";
+import { createTransparentPayment, transparentCheckoutEnabled } from "./transparent-payments";
 
 export async function checkout(request: Request, input: unknown) {
   const data = checkoutSchema.parse(input),
@@ -60,8 +61,15 @@ export async function checkout(request: Request, input: unknown) {
     number = `SM${new Date().getFullYear()}-${uid().replaceAll("-", "").slice(0, 8).toUpperCase()}`,
     stamp = now();
   const total = subtotal - discount.amount + shipping.amount;
+  const transparent = !data.demo && transparentCheckoutEnabled();
+  const plans = installmentTotals(total, s);
+  const selectedInstallments = data.payment?.installments || 1;
+  if (transparent && data.paymentMethod === "credit_card" && !data.payment?.cardToken)
+    throw new ShopError("Preencha os dados do cartão para continuar.");
+  if (transparent && !plans.some(p => p.number === selectedInstallments)) throw new ShopError("Parcelamento inválido.");
   const paymentConfig = {
-    installments: installmentTotals(total, s),
+    ...(transparent ? { checkout: "transparent" as const, selectedInstallments } : {}),
+    installments: plans,
     pixMinutes: s.pixMinutes,
     boletoDays: s.boletoDays,
     expiresAt: new Date(Date.now() + s.boletoDays * 86400000).toISOString(),
@@ -178,6 +186,10 @@ export async function checkout(request: Request, input: unknown) {
   const order = decodeOrder(raw!);
   if (!data.demo) {
     try {
+      if (transparent) {
+        await createTransparentPayment(order, data.payment?.cardToken);
+        return { order: await getOrder(id, request), cookie: who.cookie };
+      }
       order.payment_link = await createPaymentLink(
         order,
         new URL(request.url).origin,

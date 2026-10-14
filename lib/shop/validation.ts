@@ -106,6 +106,10 @@ export const addressSchema = z
     state: z.string().refine((s) => states.includes(s), "Estado inválido."),
   })
   .strict();
+export const transparentPaymentSchema = z.object({
+  cardToken: z.string().regex(/^token_[A-Za-z0-9]+$/).max(150).optional(),
+  installments: z.number().int().min(1).max(12).default(1),
+}).strict();
 export const checkoutSchema = z
   .object({
     items: cartSchema,
@@ -117,6 +121,7 @@ export const checkoutSchema = z
     requestKey: z.string().uuid(),
     termsAccepted: z.literal(true),
     demo: z.boolean(),
+    payment: transparentPaymentSchema.optional(),
   })
   .strict();
 export const shippingRuleSchema = z

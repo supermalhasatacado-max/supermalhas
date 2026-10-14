@@ -63,7 +63,7 @@ globalThis.__shopUser = null;
 const compiled = await build({
   stdin: {
     contents:
-      "export * from './lib/shop/server'; export * from './lib/shop/checkout'; export * from './lib/shop/payments'; export * from './lib/shop/defaults'; export * from './db/supabase'; export * from './lib/shop/storage';",
+      "export * from './lib/shop/server'; export * from './lib/shop/checkout'; export * from './lib/shop/payments'; export * from './lib/shop/transparent-payments'; export { checkoutSchema } from './lib/shop/validation'; export * from './lib/shop/defaults'; export * from './db/supabase'; export * from './lib/shop/storage';",
     resolveDir: process.cwd(),
   },
   bundle: true,
@@ -117,6 +117,8 @@ delete globalThis.__shopEnv.ADMIN_EMAILS;
 let provider, payload;
 let linkPosts = 0, linkMode = "ok";
 const providerLinks = new Map();
+const directOrders = new Map();
+let directPosts = 0, directMode = "ok", directStatus = "pending", directPayload;
 const photos = new Map(),
   executed = new Set();
 globalThis.fetch = async (input, options = {}) => {
@@ -170,6 +172,29 @@ globalThis.fetch = async (input, options = {}) => {
     url.origin === "https://sdx-api.pagar.me"
   ) {
     assert(headers.get("Authorization").startsWith("Basic "));
+    if (url.pathname.endsWith("/customers") && options.method === "POST") return Response.json({ id: "cus_direct" });
+    if (url.pathname.endsWith("/customers/cus_direct/cards") && options.method === "POST") {
+      const card = JSON.parse(options.body);
+      assert.deepEqual(Object.keys(card).sort(), ["billing_address", "token"]);
+      assert.equal(card.token, "token_directfixture");
+      if (directMode === "card_error") return Response.json({}, { status: 422 });
+      return Response.json({ id: "card_direct" });
+    }
+    if (url.pathname.endsWith("/orders") && options.method === "POST") {
+      directPosts++;
+      directPayload = JSON.parse(options.body);
+      const method = directPayload.payments[0].payment_method;
+      const result = { id: `or_direct${directPosts}`, code: directPayload.code, amount: directPayload.items[0].amount, currency: "BRL", status: directStatus,
+        charges: [{ payment_method: method, status: directStatus, last_transaction: { qr_code: method === "pix" ? "000201-fixture-pix" : undefined,
+          qr_code_url: method === "pix" ? "https://api.pagar.me/fixture-qr.png" : undefined,
+          line: method === "boleto" ? "123456789-fixture-line" : undefined,
+          pdf: method === "boleto" ? "https://api.pagar.me/fixture-boleto.pdf" : undefined,
+          expires_at: "2030-01-01T12:00:00Z" } }] };
+      directOrders.set(result.id, result);
+      if (directMode === "timeout") throw new Error("Lost response after order creation");
+      return Response.json(result);
+    }
+    if (/\/orders\/or_direct\d+$/.test(url.pathname)) return Response.json(directOrders.get(url.pathname.split("/").at(-1)));
     if (url.pathname.endsWith("/paymentlinks") && options.method === "POST") {
       linkPosts++;
       payload = JSON.parse(options.body);
@@ -190,7 +215,7 @@ globalThis.fetch = async (input, options = {}) => {
     if (url.pathname.endsWith("/orders/or_offline"))
       return Response.json(provider);
     if (url.pathname.endsWith("/orders"))
-      return Response.json({ data: provider ? [provider] : [] });
+      return Response.json({ data: [...(provider ? [provider] : []), ...directOrders.values()].filter(p => !url.searchParams.get("code") || p.code === url.searchParams.get("code")) });
     if (url.pathname.endsWith("/paymentlinks/pl_offline"))
       return Response.json(linkMode === "recovery" ? providerLinks.get(payload.name) : { status: "inactive", total_sessions: 0 });
   }
@@ -639,6 +664,57 @@ try {
   for (const r of concurrentLinks) if (r.status === "rejected") assert.equal(r.reason.status, 409);
   linkMode = "ok";
   console.log("PASS: durable payment-link claim, timeout recovery, inconclusive lookup, definite rejection retry and freight paid separately.");
+  globalThis.__shopEnv.PAGARME_CHECKOUT_MODE = "transparent";
+  globalThis.__shopEnv.PAGARME_PUBLIC_KEY = "pk_offline_fixture";
+  // Public keys are alphanumeric; use a valid fixture without another underscore.
+  globalThis.__shopEnv.PAGARME_PUBLIC_KEY = "pk_offlinefixture";
+  assert.equal(shop.transparentCheckoutEnabled(), true);
+  assert.throws(() => shop.checkoutSchema.parse({ ...data, payment: { card: { number: "4111111111111111", cvv: "123" } } }), /Unrecognized/);
+  await assert.rejects(() => shop.checkout(request, { ...data, coupon: "", requestKey: crypto.randomUUID() }), /dados do cartão/);
+  for (const method of ["pix", "boleto", "credit_card"]) {
+    directStatus = method === "credit_card" ? "paid" : "pending";
+    const placed = (await shop.checkout(request, { ...data, coupon: "", paymentMethod: method, payment: { installments: method === "credit_card" ? 3 : 1, ...(method === "credit_card" ? { cardToken: "token_directfixture" } : {}) }, requestKey: crypto.randomUUID() })).order;
+    assert.equal(placed.payment_config.checkout, "transparent");
+    assert.equal(placed.payment_link, null);
+    assert.equal(placed.payment_details.method, method);
+    assert(!placed.events.some(e => e.type === "payment.instructions"));
+    assert.equal(placed.payment_status, directStatus);
+    if (method === "pix") assert.equal(placed.payment_details.qrCode, "000201-fixture-pix");
+    if (method === "boleto") assert.equal(placed.payment_details.boletoUrl, "https://api.pagar.me/fixture-boleto.pdf");
+    if (method === "credit_card") {
+      assert.equal(directPayload.payments[0].credit_card.card_id, "card_direct");
+      assert.equal(directPayload.payments[0].credit_card.installments, 3);
+      assert.equal(placed.charged_total, placed.payment_config.installments.find(p => p.number === 3).total);
+    }
+    const postCount = directPosts;
+    await shop.createTransparentPayment(placed);
+    assert.equal(directPosts, postCount, "Reopening an order cannot charge again");
+    if (method !== "credit_card") await assert.rejects(() => shop.cancelUnpaidOrder(placed.id, "https://shop.example"), /atendimento/);
+  }
+  directStatus = "pending"; directMode = "timeout";
+  const missingReceipt = (await shop.checkout(request, { ...data, coupon: "", paymentMethod: "pix", requestKey: crypto.randomUUID() })).order;
+  assert(!missingReceipt.payment_details);
+  const postCount = directPosts;
+  await Promise.all([shop.createTransparentPayment(missingReceipt), shop.createTransparentPayment(missingReceipt)]);
+  assert.equal(directPosts, postCount, "An ambiguous timeout must recover rather than create another charge");
+  assert((await shop.getOrder(missingReceipt.id, request)).payment_details.qrCode);
+  directMode = "card_error";
+  const postsBeforeCardError = directPosts;
+  const rejectedCard = (await shop.checkout(request, { ...data, coupon: "", payment: { cardToken: "token_directfixture", installments: 1 }, requestKey: crypto.randomUUID() })).order;
+  assert.equal(directPosts, postsBeforeCardError, "Rejected token/card creation cannot submit a charge");
+  directMode = "ok";
+  await shop.createTransparentPayment(rejectedCard, "token_directfixture");
+  assert.equal(directPosts, postsBeforeCardError + 1);
+  directStatus = "failed";
+  const stockBeforeDecline = (await row("SELECT stock FROM products WHERE id='sm-200'")).stock;
+  const declinedCard = (await shop.checkout(request, { ...data, coupon: "", payment: { cardToken: "token_directfixture", installments: 1 }, requestKey: crypto.randomUUID() })).order;
+  assert.equal(declinedCard.payment_status, "failed");
+  assert.equal((await row("SELECT stock FROM products WHERE id='sm-200'")).stock, stockBeforeDecline, "Declined cards release their reservation once");
+  const persisted = JSON.stringify((await pg.query("SELECT * FROM orders")).rows) + JSON.stringify((await pg.query("SELECT * FROM order_events")).rows);
+  assert(!persisted.includes("token_directfixture"), "The one-use card token must never reach persistent storage");
+  delete globalThis.__shopEnv.PAGARME_CHECKOUT_MODE;
+  delete globalThis.__shopEnv.PAGARME_PUBLIC_KEY;
+  console.log("PASS: transparent Pix, boleto, token-to-card PSP payment, immutable installments, confirmation, timeout recovery, charge deduplication and token privacy.");
   const demoSettings = { ...ready, salesEnabled: false };
   await database
     .prepare("UPDATE settings SET data=? WHERE key='store'")

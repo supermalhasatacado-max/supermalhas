@@ -37,6 +37,8 @@ import {
   states,
 } from "@/lib/shop/validation";
 import { checkout } from "@/lib/shop/checkout";
+import { createTransparentPayment, transparentCheckoutEnabled } from "@/lib/shop/transparent-payments";
+import { transparentPaymentSchema } from "@/lib/shop/validation";
 import {
   createPaymentLink,
   syncOrder,
@@ -73,6 +75,8 @@ async function handle(request: Request) {
         user: await getStoreUser(),
         admin,
         paymentReady: !!env.PAGARME_SECRET_KEY,
+        transparentCheckout: transparentCheckoutEnabled(),
+        pagarmePublicKey: transparentCheckoutEnabled() ? env.PAGARME_PUBLIC_KEY : undefined,
         paymentEnvironment: paymentEnvironment(),
         emailReady: !!env.RESEND_API_KEY && !!settings.emailFrom,
         launchIssues: admin ? launchIssues(settings) : [],
@@ -155,9 +159,11 @@ async function handle(request: Request) {
     } else if (/^orders\/[^/]+\/payment$/.test(path) && method === "POST") {
       await rateLimit(request, "payment", 6);
       const order = await getOrder(path.split("/")[1], request);
-      data = {
-        url: await createPaymentLink(order, new URL(request.url).origin),
-      };
+      if (order.payment_config?.checkout === "transparent") {
+        const input = transparentPaymentSchema.parse(await jsonBody(request));
+        await createTransparentPayment(order, input.cardToken);
+        data = { order: await getOrder(order.id, request) };
+      } else data = { url: await createPaymentLink(order, new URL(request.url).origin) };
     } else if (/^orders\/[^/]+\/cancel$/.test(path) && method === "POST") {
       await rateLimit(request, "cancel", 6);
       const id = path.split("/")[1];

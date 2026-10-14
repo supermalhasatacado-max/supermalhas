@@ -38,6 +38,7 @@ import {
   ProductCard,
 } from "./ui";
 import { Summary } from "./cart";
+import { TransparentPaymentPanel } from "./transparent-payment";
 export function AccountPage() {
   const { data } = useShop();
   const [orders, setOrders] = useState<Order[]>([]),
@@ -307,7 +308,7 @@ export function OrderPage({ id }: { id: string }) {
                 {status}
               </span>
             </div>
-            {!order.demo &&
+            {order.payment_config?.checkout !== "transparent" && !order.demo &&
               ["pending", "creating"].includes(order.payment_status) && (
                 <div className="order-pay-actions">
                   {order.payment_link ? (
@@ -342,6 +343,7 @@ export function OrderPage({ id }: { id: string }) {
                 </div>
               )}
           </section>
+          {order.payment_config?.checkout === "transparent" && <TransparentPaymentPanel order={order} refresh={() => load(true)} />}
           {!order.demo && order.payment_status === "failed" && (
             <LinkButton href="/camisetas" variant="outline">
               Escolher um pacote para tentar novamente <ArrowRight size={16} />

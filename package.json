@@ -13,7 +13,7 @@
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "drizzle-kit generate",
     "test:supabase": "node scripts/supabase-contract.mjs --check && node tests/supabase.mjs",
-    "test": "npm run test:supabase && node tests/auth.mjs && node tests/webhooks.mjs",
+    "test": "npm run test:supabase && node tests/auth.mjs && node tests/webhooks.mjs && node tests/tokenization.mjs",
     "test:pagarme": "node --env-file-if-exists=.env.local tests/pagarme-live.mjs"
   },
   "dependencies": {
@@ -33,6 +33,7 @@
     "lucide-react": "^1.31.0",
     "next": "16.3.4",
     "next-themes": "^0.4.6",
+    "qrcode": "^1.5.4",
     "radix-ui": "^1.6.7",
     "react": "19.2.6",
     "react-day-picker": "^10.0.1",
@@ -52,6 +53,7 @@
     "@electric-sql/pglite": "^0.5.8",
     "@tailwindcss/postcss": "4.2.1",
     "@types/node": "22.19.19",
+    "@types/qrcode": "^1.5.6",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "6.0.2",

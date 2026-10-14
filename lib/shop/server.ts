@@ -7,6 +7,7 @@ import {
 import type { StoreDatabase } from "@/db/store-database";
 import { getStoreUser } from "@/lib/auth/user";
 import { defaultProducts, defaultSettings } from "./defaults";
+import { safePaymentDetails } from "./payment-data";
 import { digits, validDocument, cartSchema } from "./validation";
 import type {
   StoreSettings,
@@ -340,7 +341,10 @@ export async function getOrder(id: string, request: Request, admin = false) {
     )
     .bind(id)
     .all<{ id: string; type: string; note: string; created_at: string }>();
-  return { ...decodeOrder(row), events: events.results };
+  const savedDetails = events.results.find(e => e.type === "payment.instructions");
+  let payment_details;
+  try { payment_details = savedDetails ? safePaymentDetails(JSON.parse(savedDetails.note)) : undefined; } catch {}
+  return { ...decodeOrder(row), payment_details, events: events.results.filter(e => e.type !== "payment.instructions") };
 }
 export async function event(
   orderId: string,

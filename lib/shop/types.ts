@@ -59,13 +59,17 @@ export type OrderItem = CartItem & {
   price: number;
   image: string;
 };
+export type PaymentDetails = { method: string; qrCode?: string; qrCodeUrl?: string; barcode?: string; boletoUrl?: string; expiresAt?: string };
 export type PaymentConfig = {
+  checkout?: "hosted" | "transparent";
+  selectedInstallments?: number;
   installments: { number: number; total: number }[];
   pixMinutes: number;
   boletoDays: number;
   expiresAt: string;
 };
 export type Order = {
+  payment_details?: PaymentDetails;
   id: string;
   number: string;
   items: OrderItem[];
@@ -118,6 +122,8 @@ export type ShippingQuote = {
   demo?: boolean;
 };
 export type Bootstrap = {
+  transparentCheckout?: boolean;
+  pagarmePublicKey?: string;
   products: Product[];
   settings: StoreSettings;
   user: { userId: string; email: string; displayName: string } | null;

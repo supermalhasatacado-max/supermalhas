@@ -6875,3 +6875,12 @@ input[type="radio"] {
     width: 76px;
   }
 }
+
+.inline-card-fields { border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px; margin: 24px 0; display: grid; gap: 16px; }
+.inline-card-fields legend { font-weight: 700; padding: 0 8px; }
+.inline-card-fields > small { display: flex; align-items: center; gap: 8px; color: #536052; }
+.inline-payment-panel { display: grid; gap: 18px; margin: 20px 0; }
+.inline-payment-panel h2 { font-size: 22px; }
+.inline-payment-panel textarea { width: 100%; padding: 12px; border: 1px solid #e5e7eb; border-radius: 8px; overflow-wrap: anywhere; font-size: 12px; }
+.inline-payment-panel .pix-qr { width: 240px; height: 240px; max-width: 100%; object-fit: contain; background: #fff; padding: 8px; border: 1px solid #e5e7eb; border-radius: 12px; }
+.inline-payment-panel form { display: grid; gap: 16px; }
