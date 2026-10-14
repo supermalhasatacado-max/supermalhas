@@ -624,6 +624,19 @@ try {
   assert.equal(linkPosts, postsAfterRejection + 1, "A definite rejection allows one new attempt");
   await shop.createPaymentLink(rejected, "https://shop.example");
   assert.equal(linkPosts, postsAfterRejection + 1, "A stale caller reuses the persisted link");
+  const freshId = crypto.randomUUID();
+  await pg.query("INSERT INTO orders SELECT (jsonb_populate_record(NULL::orders, to_jsonb(o) || $1::jsonb)).* FROM orders o WHERE id=$2", [JSON.stringify({ id: freshId, number: `SM-QA-${freshId}`, request_key: crypto.randomUUID(), payment_link: null, provider_link_id: null, provider_order_id: null, payment_status: "creating" }), rejected.id]);
+  const freshOrder = shop.decodeOrder(await shop.db().prepare("SELECT * FROM orders WHERE id=?").bind(freshId).first());
+  const postsBeforeConcurrent = linkPosts;
+  linkMode = "recovery";
+  const concurrentLinks = await Promise.allSettled([
+    shop.createPaymentLink(freshOrder, "https://shop.example"),
+    shop.createPaymentLink(freshOrder, "https://shop.example"),
+  ]);
+  assert(concurrentLinks.some(r => r.status === "fulfilled"));
+  assert.equal(linkPosts, postsBeforeConcurrent + 1, "Concurrent callers across durable DB claims create one provider link");
+  for (const r of concurrentLinks) if (r.status === "rejected") assert.equal(r.reason.status, 409);
+  linkMode = "ok";
   console.log("PASS: durable payment-link claim, timeout recovery, inconclusive lookup, definite rejection retry and freight paid separately.");
   const demoSettings = { ...ready, salesEnabled: false };
   await database
