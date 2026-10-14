@@ -11,6 +11,12 @@ import {
 } from "./server";
 import type { Order, StoreSettings } from "./types";
 
+class PagarmeError extends ShopError {
+  constructor(public definiteRejection: boolean) {
+    super("Não foi possível preparar o pagamento. Confira os dados ou tente novamente pela página do pedido.", 502);
+  }
+}
+
 export function installmentTotals(total: number, s: StoreSettings) {
   return Array.from({ length: s.maxInstallments }, (_, i) => ({
     number: i + 1,
@@ -54,10 +60,7 @@ export async function pagarme(
   }
   const data = await response.json().catch(() => ({}));
   if (!response.ok)
-    throw new ShopError(
-      "Não foi possível preparar o pagamento. Confira a configuração do Pagar.me ou tente novamente.",
-      502,
-    );
+    throw new PagarmeError([400, 401, 403, 404, 422].includes(response.status));
   return data as Record<string, any>;
 }
 export function paymentLinkPayload(
@@ -152,6 +155,10 @@ export function paymentLinkPayload(
 export async function createPaymentLink(order: Order, origin: string) {
   if (order.demo)
     throw new ShopError("Pedidos demonstrativos não geram cobrança.");
+  const raw = await db().prepare("SELECT * FROM orders WHERE id=?").bind(order.id).first<Record<string, unknown>>();
+  if (!raw || raw.provider_environment !== paymentEnvironment())
+    throw new ShopError("Use o ambiente Pagar.me original deste pedido.", 409);
+  order = decodeOrder(raw);
   if (order.payment_link) return order.payment_link;
   if (!["creating", "pending"].includes(order.payment_status))
     throw new ShopError(
@@ -160,7 +167,32 @@ export async function createPaymentLink(order: Order, origin: string) {
     );
   const s = await getSettings();
   const payload = paymentLinkPayload(order, s, origin);
-  const link = await pagarme("/paymentlinks", payload, `sm-${order.id}`);
+  // Paymentlinks does not enforce Idempotency-Key. A durable, unique event
+  // claims each POST across processes. Ambiguous timeouts are recovered by
+  // merchant name/code; they must never trigger another POST automatically.
+  const attempts = await db().prepare("SELECT * FROM order_events WHERE order_id=? ORDER BY created_at ASC").bind(order.id).all<{ id: string; type: string }>();
+  const attempt = attempts.results.filter(e => e.type === "payment.link_rejected").length;
+  const claim = await db().prepare("INSERT OR IGNORE INTO order_events (id,order_id,type,note,created_at) VALUES (?,?,?,?,?)")
+    .bind(`payment-link:${order.id}:${attempt}`, order.id, "payment.link_creating", "Preparando checkout seguro no Pagar.me.", now()).run();
+  let link;
+  if (claim.meta.changes) {
+    try {
+      link = await pagarme("/paymentlinks", payload, `sm-${order.id}-${attempt}`);
+    } catch (error) {
+      if (error instanceof PagarmeError && error.definiteRejection)
+        await event(order.id, "payment.link_rejected", "O provedor recusou a criação do checkout. Uma nova tentativa é permitida.", `payment-link-rejected:${order.id}:${attempt}`);
+      throw error;
+    }
+  } else {
+    const found = await pagarme(`/paymentlinks?name=${encodeURIComponent(payload.name)}&per_page=30`);
+    const matches = (found.data || []).filter((candidate: Record<string, unknown>) => candidate.name === payload.name && candidate.order_code === order.number);
+    if (matches.length !== 1 || matches[0].status !== "active")
+      throw new ShopError("O checkout está sendo conferido no Pagar.me. Aguarde e atualize o pedido. Se persistir, fale com o atendimento; não é necessário refazer a compra.", 409);
+    link = await pagarme(`/paymentlinks/${encodeURIComponent(matches[0].id)}`);
+    if (link.order_code !== order.number || link.cart_settings?.total_cost !== order.total ||
+      link.payment_settings?.accepted_payment_methods?.length !== 1 || link.payment_settings.accepted_payment_methods[0] !== order.payment_method)
+      throw new ShopError("O checkout exige conferência do atendimento.", 409);
+  }
   let url: URL;
   try {
     url = new URL(link.url);
@@ -169,13 +201,13 @@ export async function createPaymentLink(order: Order, origin: string) {
   }
   if (url.protocol !== "https:" || !url.hostname.endsWith(".pagar.me"))
     throw new ShopError("O provedor retornou uma URL inválida.", 502);
-  await db()
+  const saved = await db()
     .prepare(
       "UPDATE orders SET payment_link=?,provider_link_id=?,provider_environment=?,payment_status='pending',updated_at=? WHERE id=? AND payment_link IS NULL",
     )
     .bind(url.href, link.id, paymentEnvironment(), now(), order.id)
     .run();
-  await event(
+  if (saved.meta.changes) await event(
     order.id,
     "payment.pending",
     "Checkout Pagar.me preparado. Aguardando pagamento.",

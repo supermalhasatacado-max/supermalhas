@@ -768,16 +768,16 @@ export function AdminPage() {
                                 {r.states.length
                                   ? r.states.join(", ")
                                   : "Todos os estados"}{" "}
-                                · {r.minDays} a {r.maxDays} dias úteis
+                                · {r.toArrange ? "Prazo a combinar" : `${r.minDays} a ${r.maxDays} dias úteis`}
                               </small>
                               <small>
-                                {r.freeAbove > 0
+                                {r.toArrange ? "Frete pago à parte" : r.freeAbove > 0
                                   ? `Grátis a partir de ${money(r.freeAbove)}`
                                   : "Sem condição de frete grátis"}{" "}
                                 · {r.active ? "Ativa" : "Inativa"}
                               </small>
                             </span>
-                            <b>{money(r.amount)}</b>
+                            <b>{r.toArrange ? "A combinar" : money(r.amount)}</b>
                             <Button
                               variant="outline"
                               onClick={() => setRule(r)}
@@ -1767,6 +1767,7 @@ function RuleEditor({
             onChange={(v) => setR({ ...r, maxDays: Number(v) })}
           />
         </div>
+        <label className="check-control"><input type="checkbox" checked={!!r.toArrange} onChange={e => setR({ ...r, toArrange: e.target.checked, ...(e.target.checked ? { amount: 0, freeAbove: 0 } : {}) })} /><span>Frete a combinar, pago à parte. O preço e o prazo não são calculados pela loja.</span></label>
         <h4>Estados atendidos</h4>
         <p className="small muted">
           Nenhum estado selecionado = todos os estados.

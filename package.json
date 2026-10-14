@@ -13,7 +13,8 @@
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "drizzle-kit generate",
     "test:supabase": "node scripts/supabase-contract.mjs --check && node tests/supabase.mjs",
-    "test": "npm run test:supabase && node tests/auth.mjs"
+    "test": "npm run test:supabase && node tests/auth.mjs && node tests/webhooks.mjs",
+    "test:pagarme": "node --env-file-if-exists=.env.local tests/pagarme-live.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",

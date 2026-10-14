@@ -4,7 +4,9 @@
 
 A loja utiliza a API v5 para criar um checkout hospedado por pedido. Pix, boleto e cartão são selecionados na loja; dados financeiros são preenchidos diretamente na página Pagar.me. Não é necessária uma chave pública para este fluxo e a loja não coleta número de cartão ou CVV.
 
-O servidor transmite o total em centavos, incluindo frete e cupom. Cada link permite um pedido e uma aprovação. Preços, grade, condições de parcelamento, validade e endereço ficam registrados no pedido. Alterações futuras no painel não modificam condições anteriores.
+O servidor transmite o total em centavos, incluindo frete com valor definido e cupom. Na modalidade a combinar, o transporte é explicitamente pago à parte e fica fora do total dos produtos; valor e prazo devem ser combinados com o SAC antes do pagamento. Cada link permite um pedido e uma aprovação. Preços, grade, condições de parcelamento, validade e endereço ficam registrados no pedido. Alterações futuras no painel não modificam condições anteriores.
+
+O endpoint `/paymentlinks` foi observado criando links diferentes para POSTs com a mesma `Idempotency-Key`. A loja aplica uma trava durável própria em `order_events`, compartilhada entre instâncias. Após timeout ou resposta inconclusiva, procura o link pelo nome e código do pedido e confere valor e método antes de associá-lo. Não dispara outro POST nesse caso. Uma rejeição explícita HTTP 400/401/403/404/422 permite nova tentativa. Se a consulta continuar inconclusiva, o pedido requer conferência pelo atendimento; a loja não presume que a criação falhou.
 
 ## Variáveis protegidas
 
@@ -38,7 +40,15 @@ Se o serviço ficar indisponível, o pedido é preservado e oferece preparação
 
 ## Estado de validação
 
-Validação local: TypeScript, build Next.js, autenticação e testes de PostgreSQL/PGlite com provedor simulado. O teste HTTP atual verifica a publicação Vercel selecionada sem alterar estoque/configurações. A homologação com a API real, notificações e dados de teste do Pagar.me permanece pendente da chave. Nenhuma cobrança real foi executada.
+Em 14/10/2026, a chave fornecida autenticou na API de produção. Pix, boleto e cartão foram validados criando links inativos (`is_building: true`), consultando total, método, código e limites e cancelando todos os links. A consulta final confirmou zero sessões de pagamento. Nenhuma cobrança real foi executada.
+
+`npm test` cobre banco, concorrência, reserva, cupons, autenticação, transições de pagamento, recuperação de link após perda de resposta, retentativa após rejeição explícita e webhook. Os testes de webhook verificam rejeição de configuração ausente, autenticação opcional, JSON inválido, tamanho excedido e delegação para consulta autenticada; não provam entrega de notificações reais. `tests/http.mjs` verifica a loja publicada sem criar compras.
+
+Para repetir a verificação real com a chave no ambiente privado, use `npm run test:pagarme` (somente autenticação) ou `npm run test:pagarme -- --drafts` (cria rascunhos inativos e os cancela). Não informe a chave em argumentos de linha de comando, arquivos versionados ou logs.
+
+Ainda necessários para homologação completa: configurar a chave e `PAGARME_ENVIRONMENT=production` na Vercel e republicar; cadastrar e verificar entrega real do webhook; obter chave de teste para executar aprovação, recusa, Pix, boleto e estorno em sandbox. Os links inativos de produção não provam esses fluxos. As vendas devem permanecer desativadas até essa conclusão.
+
+O cadastro operacional autorizado em 14/10/2026 está em `docs/operacao-20261014.json`. O script `scripts/configure-operation.mjs` aplica SAC, políticas e estoque de pacotes completos a uma loja ainda sem vendas, preservando os demais campos. A regra de frete depende da publicação do código que reconhece `toArrange`; só depois executar com `--include-shipping`. Não reexecutar o ajuste inicial para repor estoque de uma loja que já tenha vendido.
 
 ## Referências oficiais
 

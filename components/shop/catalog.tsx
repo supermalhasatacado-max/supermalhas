@@ -480,10 +480,10 @@ function ProductDetail({ p }: { p: Product }) {
             {shipping.map((r) => (
               <p key={r.id}>
                 <strong>
-                  {r.label} · {money(r.amount)}
+                  {r.label} · {r.toArrange ? "A combinar" : money(r.amount)}
                 </strong>
                 <small>
-                  {r.demo
+                  {r.toArrange ? "Valor e prazo combinados com o SAC antes do pagamento. Frete pago à parte." : r.demo
                     ? "Exemplo de entrega para teste"
                     : `${r.minDays} a ${r.maxDays} dias úteis após postagem`}
                 </small>

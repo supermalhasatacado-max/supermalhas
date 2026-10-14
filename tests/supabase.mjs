@@ -98,6 +98,9 @@ const shop = await import(
   "data:text/javascript;base64," +
     Buffer.from(compiled.outputFiles[0].text).toString("base64")
 );
+globalThis.__shopEnv.PAGARME_ENVIRONMENT = "test";
+assert.throws(() => shop.paymentEnvironment(), /precisam corresponder/);
+globalThis.__shopEnv.PAGARME_ENVIRONMENT = "production";
 // Admin access requires a verified identity and an explicit email allowlist.
 globalThis.__shopEnv.ADMIN_EMAILS = " owner@example.com , SECOND@example.com ";
 assert.equal(await shop.isAdmin(), false);
@@ -112,6 +115,8 @@ assert.equal(await shop.isAdmin(), false);
 globalThis.__shopUser = null;
 delete globalThis.__shopEnv.ADMIN_EMAILS;
 let provider, payload;
+let linkPosts = 0, linkMode = "ok";
+const providerLinks = new Map();
 const photos = new Map(),
   executed = new Set();
 globalThis.fetch = async (input, options = {}) => {
@@ -166,18 +171,28 @@ globalThis.fetch = async (input, options = {}) => {
   ) {
     assert(headers.get("Authorization").startsWith("Basic "));
     if (url.pathname.endsWith("/paymentlinks") && options.method === "POST") {
+      linkPosts++;
       payload = JSON.parse(options.body);
-      return Response.json({
+      if (linkMode === "reject") return Response.json({}, { status: 422 });
+      const link = {
+        ...payload,
         id: "pl_offline",
         url: "https://checkout.pagar.me/offline",
-      });
+        status: "active",
+        cart_settings: { ...payload.cart_settings, total_cost: payload.cart_settings.items[0].amount },
+      };
+      providerLinks.set(payload.name, link);
+      if (linkMode === "timeout") throw new Error("Response lost after provider creation");
+      return Response.json(link);
     }
+    if (url.pathname.endsWith("/paymentlinks") && (!options.method || options.method === "GET"))
+      return Response.json({ data: [...providerLinks.values()].filter(link => link.name === url.searchParams.get("name")) });
     if (url.pathname.endsWith("/orders/or_offline"))
       return Response.json(provider);
     if (url.pathname.endsWith("/orders"))
       return Response.json({ data: provider ? [provider] : [] });
     if (url.pathname.endsWith("/paymentlinks/pl_offline"))
-      return Response.json({ status: "inactive", total_sessions: 0 });
+      return Response.json(linkMode === "recovery" ? providerLinks.get(payload.name) : { status: "inactive", total_sessions: 0 });
   }
   throw new Error(`Unexpected external request: ${url.origin}${url.pathname}`);
 };
@@ -219,6 +234,9 @@ try {
   const request = new Request("https://shop.example/api/shop/checkout", {
     headers: { cookie: "sm_guest=" + "a".repeat(64) },
   });
+  const arrangedDelivery = shop.shippingQuotes({ ...ready, shippingRules: [{ ...ready.shippingRules[0], toArrange: true, amount: 9999 }] }, "AM", 500000);
+  assert.equal(arrangedDelivery[0].toArrange, true);
+  assert.equal(arrangedDelivery[0].amount, 0, "Frete a combinar is separate from the charged products total");
   const data = {
     items: [
       {
@@ -578,6 +596,35 @@ try {
     ).results.length,
     2,
   );
+  // The real /paymentlinks endpoint can ignore Idempotency-Key. Prove the
+  // application sends one POST, including after a lost provider response.
+  await pg.exec("UPDATE products SET stock=20 WHERE id='sm-200'");
+  linkMode = "timeout";
+  const postsBeforeTimeout = linkPosts;
+  const uncertain = (await shop.checkout(request, { ...data, coupon: "", requestKey: crypto.randomUUID() })).order;
+  assert.equal(linkPosts, postsBeforeTimeout + 1);
+  assert(!uncertain.payment_link);
+  linkMode = "recovery";
+  const uncertainLink = providerLinks.get(payload.name);
+  providerLinks.delete(payload.name);
+  await assert.rejects(() => shop.createPaymentLink(uncertain, "https://shop.example"), /sendo conferido/);
+  assert.equal(linkPosts, postsBeforeTimeout + 1, "An inconclusive lookup must not send another POST");
+  providerLinks.set(payload.name, uncertainLink);
+  const recovered = await Promise.all([
+    shop.createPaymentLink(uncertain, "https://shop.example"),
+    shop.createPaymentLink(uncertain, "https://shop.example"),
+  ]);
+  assert.equal(new Set(recovered).size, 1);
+  assert.equal(linkPosts, postsBeforeTimeout + 1, "Timeout recovery must not create a second provider link");
+  linkMode = "reject";
+  const rejected = (await shop.checkout(request, { ...data, coupon: "", requestKey: crypto.randomUUID() })).order;
+  const postsAfterRejection = linkPosts;
+  linkMode = "ok";
+  await shop.createPaymentLink(rejected, "https://shop.example");
+  assert.equal(linkPosts, postsAfterRejection + 1, "A definite rejection allows one new attempt");
+  await shop.createPaymentLink(rejected, "https://shop.example");
+  assert.equal(linkPosts, postsAfterRejection + 1, "A stale caller reuses the persisted link");
+  console.log("PASS: durable payment-link claim, timeout recovery, inconclusive lookup, definite rejection retry and freight paid separately.");
   const demoSettings = { ...ready, salesEnabled: false };
   await database
     .prepare("UPDATE settings SET data=? WHERE key='store'")

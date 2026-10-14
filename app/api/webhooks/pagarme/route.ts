@@ -20,9 +20,13 @@ export async function POST(request: Request) {
     await rateLimit(request, "webhook", 120);
     const text = await request.text();
     if (text.length > 256000) return new Response(null, { status: 413 });
-    const hook = JSON.parse(text);
+    let hook;
+    try { hook = JSON.parse(text); }
+    catch { return Response.json({ error: "Evento inválido." }, { status: 400 }); }
     if (
+      !hook ||
       typeof hook.id !== "string" ||
+      !hook.id.length ||
       hook.id.length > 150 ||
       typeof hook.type !== "string"
     )
@@ -31,6 +35,8 @@ export async function POST(request: Request) {
     const providerId = hook.type.startsWith("order.")
       ? hook.data?.id
       : hook.data?.order?.id;
+    if (hook.type.startsWith("order.") && !providerId)
+      return Response.json({ error: "Referência do pedido ausente." }, { status: 400 });
     if (providerId) await verifyProviderOrder(providerId, hook.id);
     return Response.json({ received: true });
   } catch (error) {

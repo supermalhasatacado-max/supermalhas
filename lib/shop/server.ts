@@ -107,10 +107,11 @@ export async function requireAdmin() {
     throw new ShopError("Acesso restrito aos administradores da loja.", 403);
 }
 export function paymentEnvironment() {
-  return (
-    env.PAGARME_ENVIRONMENT ||
-    (env.PAGARME_SECRET_KEY?.startsWith("sk_test") ? "test" : "production")
-  );
+  const environment = env.PAGARME_ENVIRONMENT || (env.PAGARME_SECRET_KEY?.startsWith("sk_test") ? "test" : "production");
+  if (!["test", "production"].includes(environment) || (env.PAGARME_SECRET_KEY &&
+    (!env.PAGARME_SECRET_KEY.startsWith("sk_") || env.PAGARME_SECRET_KEY.startsWith("sk_test") !== (environment === "test"))))
+    throw new ShopError("A chave e o ambiente Pagar.me precisam corresponder. Confira a configuração do servidor.", 503);
+  return environment;
 }
 export function sandboxEnabled(s: StoreSettings) {
   return (
@@ -239,7 +240,8 @@ export function shippingQuotes(
     .map((r) => ({
       id: r.id,
       label: r.label,
-      amount: r.freeAbove > 0 && subtotal >= r.freeAbove ? 0 : r.amount,
+      amount: r.toArrange || (r.freeAbove > 0 && subtotal >= r.freeAbove) ? 0 : r.amount,
+      toArrange: r.toArrange,
       minDays: r.minDays,
       maxDays: r.maxDays,
     }));

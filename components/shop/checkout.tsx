@@ -541,13 +541,13 @@ export function CheckoutPage() {
                         <span>
                           <b>{r.label}</b>
                           <small>
-                            {r.demo
+                            {r.toArrange ? "Valor, transportadora e prazo a combinar com o SAC antes do pagamento. Pago à parte." : r.demo
                               ? "Opção de exemplo para teste. Não constitui prazo de envio."
                               : `${r.minDays} a ${r.maxDays} dias úteis após a postagem`}
                           </small>
                         </span>
                         <strong>
-                          {r.amount === 0 ? "Grátis" : money(r.amount)}
+                          {r.toArrange ? "A combinar" : r.amount === 0 ? "Grátis" : money(r.amount)}
                         </strong>
                       </label>
                     ))
@@ -697,7 +697,7 @@ export function CheckoutPage() {
                       <Link href="/politicas/privacidade" target="_blank">
                         política de privacidade
                       </Link>
-                      .
+                      .{shipping.find(r => r.id === shippingId)?.toArrange && " Estou ciente de que o frete é a combinar, pago à parte, e devo combinar o valor e o prazo com o SAC antes de pagar os produtos."}
                     </span>
                   </label>
                 </section>

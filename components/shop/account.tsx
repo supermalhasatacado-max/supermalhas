@@ -472,6 +472,7 @@ export function OrderPage({ id }: { id: string }) {
                 CEP {order.address.zip}
               </p>
               <small>{order.shipping.label}</small>
+              {order.shipping.toArrange && <p>Frete pago à parte. Valor, transportadora e prazo devem ser combinados com o SAC antes do pagamento dos produtos.</p>}
             </section>
           </div>
           <section className="form-panel order-events">

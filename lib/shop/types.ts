@@ -15,6 +15,7 @@ export type Product = {
 export type Grade = { P: number; M: number; G: number; GG: number };
 export type CartItem = { productId: string; quantity: number; grade: Grade };
 export type ShippingRule = {
+  toArrange?: boolean;
   id: string;
   label: string;
   states: string[];
@@ -108,6 +109,7 @@ export type Address = {
   state: string;
 };
 export type ShippingQuote = {
+  toArrange?: boolean;
   id: string;
   label: string;
   amount: number;

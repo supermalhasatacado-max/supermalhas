@@ -121,6 +121,7 @@ export const checkoutSchema = z
   .strict();
 export const shippingRuleSchema = z
   .object({
+    toArrange: z.boolean().optional(),
     id: z
       .string()
       .regex(/^[a-z0-9-]+$/)

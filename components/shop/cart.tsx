@@ -138,7 +138,7 @@ export function Summary({
           <dt>Entrega</dt>
           <dd>
             {shipping
-              ? shipping.amount === 0
+              ? shipping.toArrange ? "A combinar, pago à parte" : shipping.amount === 0
                 ? "Grátis"
                 : money(shipping.amount)
               : "Calcular no checkout"}
@@ -146,9 +146,10 @@ export function Summary({
         </div>
       </dl>
       <div className="total-line">
-        <span>Total</span>
+        <span>{shipping?.toArrange ? "Total dos produtos" : "Total"}</span>
         <strong>{money(subtotal - discount + (shipping?.amount || 0))}</strong>
       </div>
+      {shipping?.toArrange && <p className="notice">O frete não está incluído neste pagamento. Consulte o SAC para combinar valor, transportadora e prazo antes de pagar os produtos. O envio depende desse acordo.</p>}
       {children}
       <div className="summary-safe">
         <ShieldCheck size={20} />
