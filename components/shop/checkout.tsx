@@ -196,7 +196,7 @@ export function CheckoutPage() {
         paymentMethod: method,
         requestKey: requestKey.current,
         termsAccepted: true,
-        demo: data.demo,
+        demo: false,
       });
       clear();
       if (order.payment_link) window.location.assign(order.payment_link);
@@ -541,9 +541,7 @@ export function CheckoutPage() {
                         <span>
                           <b>{r.label}</b>
                           <small>
-                            {r.toArrange ? "Valor, transportadora e prazo a combinar com o SAC antes do pagamento. Pago à parte." : r.demo
-                              ? "Opção de exemplo para teste. Não constitui prazo de envio."
-                              : `${r.minDays} a ${r.maxDays} dias úteis após a postagem`}
+                            {r.toArrange ? "Valor, transportadora e prazo a combinar com o SAC antes do pagamento. Pago à parte." : `${r.minDays} a ${r.maxDays} dias úteis após a postagem`}
                           </small>
                         </span>
                         <strong>
@@ -629,24 +627,6 @@ export function CheckoutPage() {
                       Dados financeiros processados diretamente pelo Pagar.me.
                     </span>
                   </div>
-                  {data.sandbox && (
-                    <div className="notice">
-                      <b>Ambiente de teste Pagar.me.</b>
-                      <p>
-                        Use apenas os dados de teste do provedor. Nenhuma venda
-                        real ou baixa de estoque será realizada.
-                      </p>
-                    </div>
-                  )}
-                  {data.demo && (
-                    <div className="notice">
-                      <b>Você está testando a loja.</b>
-                      <p>
-                        Este pedido é demonstrativo. Nenhuma cobrança será
-                        criada e o estoque real não será alterado.
-                      </p>
-                    </div>
-                  )}
                 </section>
                 <section className="form-panel review-panel">
                   <h2>Tudo certo para seguir?</h2>
@@ -725,9 +705,7 @@ export function CheckoutPage() {
                   ? "Continuar para entrega"
                   : step === 1
                     ? "Escolher pagamento"
-                    : data.demo
-                      ? "Criar pedido de teste"
-                      : "Ir para o pagamento seguro"}
+                    : "Ir para o pagamento seguro"}
                 {step === 2 ? (
                   <LockKeyhole size={17} />
                 ) : (

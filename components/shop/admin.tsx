@@ -215,7 +215,7 @@ export function AdminPage() {
         </Link>
         <div className="admin-store-status">
           <i className={settings.salesEnabled ? "live" : ""} />
-          {settings.salesEnabled ? "Loja em operação" : "Em pré-lançamento"}
+          {settings.salesEnabled ? "Loja em operação" : "Vendas suspensas"}
         </div>
         <label className="admin-mobile-menu">
           Área do painel
@@ -307,7 +307,7 @@ export function AdminPage() {
                         value: d.orders.filter((o) => !o.demo && !o.sandbox)
                           .length,
                         icon: ShoppingBag,
-                        sub: `${d.orders.filter((o) => !!o.demo).length} pedidos demonstrativos separados`,
+                        sub: `${d.orders.filter((o) => !!o.demo).length} registros anteriores sem cobrança`,
                       },
                       {
                         title: "Pacotes disponíveis",
@@ -371,11 +371,10 @@ export function AdminPage() {
                     ) : (
                       <Empty title="Sua operação começa aqui.">
                         <p>
-                          Faça um pedido demonstrativo para testar o fluxo
-                          completo.
+                          Os novos pedidos aparecerão aqui para acompanhamento.
                         </p>
                         <LinkButton href="/camisetas" variant="outline">
-                          Testar a loja
+                          Ver catálogo
                         </LinkButton>
                       </Empty>
                     )}
@@ -435,9 +434,9 @@ export function AdminPage() {
                             o.customer.name,
                             o.customer.email,
                             o.demo
-                              ? "Demonstrativo"
+                              ? "Sem cobrança"
                               : o.sandbox
-                                ? "Sandbox Pagar.me"
+                                ? "Sem liquidação real"
                                 : "Real",
                             o.payment_status,
                             o.fulfillment,
@@ -469,7 +468,7 @@ export function AdminPage() {
                       <option value="paid">Pagamento aprovado</option>
                       <option value="failed">Pagamento recusado</option>
                       <option value="refunded">Estornados</option>
-                      <option value="demo">Demonstrativos</option>
+                      <option value="demo">Registros sem cobrança</option>
                     </select>
                   </div>
                   {orders.length ? (
@@ -936,7 +935,7 @@ export function AdminPage() {
                         <b>
                           Ambiente:{" "}
                           {data.paymentEnvironment === "test"
-                            ? "Teste (sandbox)"
+                            ? "Homologação"
                             : "Produção"}
                         </b>
                         <p>
@@ -1201,14 +1200,6 @@ export function AdminPage() {
                     />
                     Conferi o estoque real de todos os pacotes.
                   </label>
-                  <label className="check-control">
-                    <input
-                      type="checkbox"
-                      checked={settings.demoEnabled}
-                      onChange={(e) => set("demoEnabled", e.target.checked)}
-                    />
-                    Permitir pedidos demonstrativos durante o pré-lançamento.
-                  </label>
                   <label className="check-control sales-toggle">
                     <input
                       type="checkbox"
@@ -1350,7 +1341,7 @@ function OrdersTable({
                 <b>{o.number}</b>
                 <small>
                   {date(o.created_at)}
-                  {(o.demo || o.sandbox) && " · TESTE"}
+                  {(o.demo || o.sandbox) && " · SEM COBRANÇA"}
                 </small>
               </td>
               <td>
@@ -1823,7 +1814,7 @@ function OrderEditor({
     [error, setError] = useState("");
   return (
     <Modal
-      title={`Pedido ${o.number}${o.demo ? " · DEMONSTRATIVO" : o.sandbox ? " · SANDBOX PAGAR.ME" : ""}`}
+      title={`Pedido ${o.number}${o.demo || o.sandbox ? " · SEM COBRANÇA REAL" : ""}`}
       onClose={onClose}
       wide
     >
@@ -1891,32 +1882,6 @@ function OrderEditor({
               <RefreshCw size={15} />
               Conferir no Pagar.me
             </Button>
-          )}
-          {o.demo && (
-            <select
-              aria-label="Simular pagamento"
-              value={o.payment_status}
-              onChange={async (e) => {
-                setBusy(true);
-                try {
-                  setO(
-                    await api(`admin/orders/${o.id}/demo-payment`, {
-                      status: e.target.value,
-                    }),
-                  );
-                  onSaved();
-                } catch (e) {
-                  setError((e as Error).message);
-                } finally {
-                  setBusy(false);
-                }
-              }}
-            >
-              <option value="pending">Simular: aguardando</option>
-              <option value="paid">Simular: aprovado</option>
-              <option value="failed">Simular: recusado</option>
-              <option value="refunded">Simular: estornado</option>
-            </select>
           )}
         </div>
         <form

@@ -16,7 +16,7 @@ O acesso exige uma conta do Supabase com e-mail confirmado. A conta da administr
 
 ANABELA AG MODAS LTDA, CNPJ 58.312.831/0001-89, Rua Dez de Abril, s/n, Alto da Cruz, Camaçari/BA, CEP 42803-113. Os pacotes de 200, 300 e 400 peças custam R$ 5.000, R$ 7.500 e R$ 10.000.
 
-O responsável informou 2.000 peças para cada linha de pacote: 10 pacotes de 200, 6 de 300 e 5 de 400; as 200 peças restantes da linha de 300 não completam outro pacote. SAC: sac@supermalhasatacado.com.br. Políticas redigidas e cadastro operacional em `docs/operacao-20261014.json`. O frete nacional é a combinar, pago à parte, com valor e prazo acertados com o SAC antes do pagamento dos produtos. Vendas reais permanecem desativadas até configuração de produção e homologação completa do Pagar.me. Contatos, políticas, frete, estoque, imagens e textos são gerenciados pelo painel. As compras demonstrativas não cobram, não reservam estoque e não consomem cupons.
+O responsável informou 2.000 peças para cada linha de pacote: 10 pacotes de 200, 6 de 300 e 5 de 400; as 200 peças restantes da linha de 300 não completam outro pacote. SAC: sac@supermalhasatacado.com.br. Políticas redigidas e cadastro operacional em `docs/operacao-20261014.json`. O frete nacional é a combinar, pago à parte, com valor e prazo acertados com o SAC antes do pagamento dos produtos. Pagar.me configurado em produção na Vercel. Vendas reais habilitadas por solicitação do responsável, que fará a conferência manual dos pagamentos em produção; validação de notificação real do webhook ainda pendente. Contatos, políticas, frete, estoque, imagens e textos são gerenciados pelo painel. Registros anteriores sem cobrança ficam fora das vendas e não são apresentados como compras válidas ao cliente.
 
 ## Desenvolvimento
 

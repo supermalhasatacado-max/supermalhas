@@ -245,7 +245,7 @@ function ProductDetail({ p }: { p: Product }) {
     } catch {}
   }, [p.id]);
   const total = Object.values(grade).reduce((a, b) => a + b, 0),
-    available = data.demo || data.sandbox || p.stock > 0;
+    available = p.stock > 0;
   const closeSizes = useCallback(() => setSizeModal(false), []),
     closeZoom = useCallback(() => setZoom(false), []);
   return (
@@ -336,11 +336,7 @@ function ProductDetail({ p }: { p: Product }) {
           </p>
           <div className={`stock-state ${!available ? "unavailable" : ""}`}>
             <i />
-            {data.sandbox
-              ? "Sandbox Pagar.me · Compra para teste"
-              : data.demo
-                ? "Pré-lançamento · Pacote disponível para teste"
-                : p.stock > 0
+            {p.stock > 0
                   ? `${p.stock} pacotes disponíveis`
                   : "Indisponível no momento"}
           </div>
@@ -404,11 +400,11 @@ function ProductDetail({ p }: { p: Product }) {
                 setQty(
                   Math.max(
                     1,
-                    Math.min(data.demo || data.sandbox ? 20 : p.stock, n),
+                    Math.min(p.stock, n),
                   ),
                 )
               }
-              max={data.demo || data.sandbox ? 20 : p.stock}
+              max={p.stock}
             />
             <Button
               className="grow"
@@ -483,9 +479,7 @@ function ProductDetail({ p }: { p: Product }) {
                   {r.label} · {r.toArrange ? "A combinar" : money(r.amount)}
                 </strong>
                 <small>
-                  {r.toArrange ? "Valor e prazo combinados com o SAC antes do pagamento. Frete pago à parte." : r.demo
-                    ? "Exemplo de entrega para teste"
-                    : `${r.minDays} a ${r.maxDays} dias úteis após postagem`}
+                  {r.toArrange ? "Valor e prazo combinados com o SAC antes do pagamento. Frete pago à parte." : `${r.minDays} a ${r.maxDays} dias úteis após postagem`}
                 </small>
               </p>
             ))}
@@ -545,7 +539,7 @@ function ProductDetail({ p }: { p: Product }) {
             <>
               <p>
                 {data.settings.shippingPolicy ||
-                  "As opções e valores de entrega serão publicados antes da abertura das vendas. Você pode testar o fluxo de entrega durante o pré-lançamento."}
+                  "Consulte nossa equipe para combinar as condições de entrega para o seu endereço."}
               </p>
               <Link href="/politicas/entrega" className="text-link">
                 Ver política de entrega <ArrowRight size={15} />

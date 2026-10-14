@@ -420,9 +420,7 @@ export function PolicyPage({ slug }: { slug: string }) {
             <div className="notice">
               <h3>Estamos preparando esta informação.</h3>
               <p>
-                A política oficial será publicada antes da abertura das vendas.
-                Durante o pré-lançamento, os pedidos são demonstrativos e não
-                geram cobrança.
+                Entre em contato com o atendimento para consultar esta informação.
               </p>
               {data.admin && (
                 <LinkButton href="/admin/politicas" variant="outline">

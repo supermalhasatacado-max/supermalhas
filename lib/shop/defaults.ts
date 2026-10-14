@@ -12,7 +12,7 @@ export const defaultSettings: StoreSettings = {
   businessHours: "",
   salesEnabled: false,
   inventoryConfirmed: false,
-  demoEnabled: true,
+  demoEnabled: false,
   about:
     "A Super Malhas Atacado conecta o seu negócio a camisetas brancas em malha peruana. Nossa proposta é simples: qualidade, compra prática e pacotes para revenda, uniformes e personalização.",
   shippingPolicy: "",

@@ -1,6 +1,6 @@
 "use client";
 import { usePathname } from "next/navigation";
-import { Header, Footer, CartDrawer, PreviewBanner } from "./shell";
+import { Header, Footer, CartDrawer } from "./shell";
 import { Home } from "./home";
 import { Catalog, ProductPage } from "./catalog";
 import { CartPage } from "./cart";
@@ -31,7 +31,6 @@ export default function Storefront() {
   return (
     <>
       <Header />
-      <PreviewBanner />
       {error && (
         <div className="container connectivity-notice">
           <ErrorBox message="Não conseguimos carregar os dados atualizados da loja. Tente novamente para continuar." />

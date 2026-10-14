@@ -203,6 +203,7 @@ try {
   assert.equal((await shop.getProducts()).length, 3);
   const ready = {
     ...(await shop.getSettings()),
+    demoEnabled: true,
     salesEnabled: true,
     inventoryConfirmed: true,
     email: "test@example.com",

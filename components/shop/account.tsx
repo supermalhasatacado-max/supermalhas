@@ -47,7 +47,7 @@ export function AccountPage() {
     [favorites, setFavorites] = useState<string[]>([]);
   useEffect(() => {
     api<Order[]>("orders")
-      .then(setOrders)
+      .then(rows => setOrders(rows.filter(order => !order.demo && !order.sandbox)))
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
     try {
@@ -146,7 +146,6 @@ export function AccountPage() {
                         <small>{date(order.created_at)}</small>
                       </span>
                       <span className={`status-pill ${order.payment_status}`}>
-                        {order.demo || order.sandbox ? "TESTE · " : ""}
                         {paymentLabels[order.payment_status] ||
                           order.payment_status}
                       </span>
@@ -244,6 +243,7 @@ export function OrderPage({ id }: { id: string }) {
         <LinkButton href="/minha-conta">Meus pedidos</LinkButton>
       </div>
     );
+  if (order.demo || order.sandbox) return <div className="container section"><Empty title="Registro sem cobrança"><p>Este registro anterior não constitui uma compra válida para pagamento ou envio.</p><LinkButton href="/minha-conta">Meus pedidos</LinkButton></Empty></div>;
   const paid = order.payment_status === "paid",
     status = paymentLabels[order.payment_status] || order.payment_status;
   const stage =
@@ -269,17 +269,11 @@ export function OrderPage({ id }: { id: string }) {
         <div>
           <span className="eyebrow">
             <i />
-            {order.demo
-              ? "PEDIDO DEMONSTRATIVO"
-              : order.sandbox
-                ? "SANDBOX PAGAR.ME"
-                : "OBRIGADO PELA SUA ESCOLHA"}
+            OBRIGADO PELA SUA ESCOLHA
           </span>
           <h1>
             {paid
-              ? order.sandbox
-                ? "Pagamento de teste aprovado!"
-                : "Pagamento aprovado!"
+              ? "Pagamento aprovado!"
               : order.payment_status === "failed"
                 ? "Vamos resolver seu pagamento."
                 : order.payment_status === "refunded"
@@ -287,11 +281,7 @@ export function OrderPage({ id }: { id: string }) {
                   : "Seu pedido foi recebido."}
           </h1>
           <p>
-            {order.demo
-              ? "Este é um teste da loja. Nenhuma cobrança foi realizada."
-              : order.sandbox
-                ? "Este pedido utiliza o ambiente de teste do Pagar.me e não constitui uma venda real."
-                : paid
+            {paid
                   ? "Agora vamos preparar suas camisetas. Você pode acompanhar cada etapa por aqui."
                   : "A confirmação da compra depende da aprovação do pagamento pelo Pagar.me."}
           </p>
@@ -310,13 +300,11 @@ export function OrderPage({ id }: { id: string }) {
               <span>
                 <h2>{status}</h2>
                 <p>
-                  {order.demo
-                    ? "O administrador pode simular os estados do pagamento no painel."
-                    : `Forma de pagamento: ${order.payment_method === "credit_card" ? "Cartão de crédito" : order.payment_method === "boleto" ? "Boleto" : "Pix"}.`}
+                  {`Forma de pagamento: ${order.payment_method === "credit_card" ? "Cartão de crédito" : order.payment_method === "boleto" ? "Boleto" : "Pix"}.`}
                 </p>
               </span>
               <span className={`status-pill ${order.payment_status}`}>
-                {order.demo ? "TESTE" : status}
+                {status}
               </span>
             </div>
             {!order.demo &&

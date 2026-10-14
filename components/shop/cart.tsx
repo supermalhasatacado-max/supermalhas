@@ -273,7 +273,7 @@ export function CartPage() {
                   <Quantity
                     value={i.quantity}
                     onChange={(n) => change(index, n)}
-                    max={data.demo || data.sandbox ? 20 : p.stock}
+                    max={p.stock}
                   />
                   <strong>{money(p.price * i.quantity)}</strong>
                   <button

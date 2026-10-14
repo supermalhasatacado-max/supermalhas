@@ -49,7 +49,7 @@ const fallback: Bootstrap = {
   paymentEnvironment: "production",
   emailReady: false,
   launchIssues: [],
-  demo: true,
+  demo: false,
 };
 export function ShopProvider({ children }: { children: React.ReactNode }) {
   const [data, setData] = useState<Bootstrap>(fallback),
@@ -104,7 +104,7 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
     return () => clearTimeout(t);
   }, [message]);
   const add = (p: Product, grade = balancedGrade(p.pieces), quantity = 1) => {
-    const available = data.demo || data.sandbox ? 20 : Math.min(20, p.stock);
+    const available = Math.min(20, p.stock);
     const previous = cart
       .filter((i) => i.productId === p.id)
       .reduce((n, i) => n + i.quantity, 0);
@@ -147,7 +147,7 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
           const others = cart
             .filter((i, n) => n !== index && i.productId === p?.id)
             .reduce((v, i) => v + i.quantity, 0);
-          if (p && !data.demo && !data.sandbox && others + qty > p.stock) {
+          if (p && others + qty > p.stock) {
             setMessage("Quantidade superior ao estoque disponível.");
             return;
           }

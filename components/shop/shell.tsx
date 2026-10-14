@@ -344,23 +344,3 @@ export function CartDrawer() {
     </Modal>
   );
 }
-export function PreviewBanner() {
-  const { data } = useShop();
-  return !data.settings.salesEnabled ? (
-    <div className="preview-banner">
-      <span>
-        <i />
-        {data.sandbox
-          ? "Sandbox Pagar.me · Ambiente de teste, sem vendas reais"
-          : data.demo
-            ? "Pré-lançamento · Experimente a compra sem cobranças"
-            : "Pré-lançamento · Vendas serão liberadas em breve"}
-      </span>
-      {data.admin && (
-        <Link href="/admin">
-          Configurar a loja <ChevronRight size={13} />
-        </Link>
-      )}
-    </div>
-  ) : null;
-}
