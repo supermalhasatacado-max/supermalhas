@@ -332,7 +332,7 @@ export function CartDrawer() {
           <strong>{money(total)}</strong>
         </div>
         <p className="muted small">
-          O frete é calculado para o seu endereço no checkout.
+          Consulte as condições de frete para seu endereço no checkout.
         </p>
         <Link href="/carrinho" onClick={close} className="btn primary full">
           Ver carrinho e finalizar <ArrowRight size={18} />

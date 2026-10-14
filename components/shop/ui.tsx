@@ -156,7 +156,7 @@ export function Benefits({ compact = false }: { compact?: boolean }) {
         {
           icon: Truck,
           title: "Entrega para o seu negócio",
-          text: "Frete calculado no checkout",
+          text: "Consulte as condições de frete no checkout",
         },
         {
           icon: Package,
