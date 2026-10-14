@@ -185,8 +185,10 @@ export async function createPaymentLink(order: Order, origin: string) {
     }
   } else {
     const found = await pagarme(`/paymentlinks?name=${encodeURIComponent(payload.name)}&per_page=30`);
-    const matches = (found.data || []).filter((candidate: Record<string, unknown>) => candidate.name === payload.name && candidate.order_code === order.number);
-    if (matches.length !== 1 || matches[0].status !== "active")
+    // List responses are summaries in `content`, without order_code. Only the
+    // authenticated detail response can establish the code/value/method match.
+    const matches = (found.content || []).filter((candidate: Record<string, unknown>) => candidate.name === payload.name && candidate.status === "active");
+    if (matches.length !== 1 || !/^pl_[A-Za-z0-9]+$/.test(matches[0].id))
       throw new ShopError("O checkout está sendo conferido no Pagar.me. Aguarde e atualize o pedido. Se persistir, fale com o atendimento; não é necessário refazer a compra.", 409);
     link = await pagarme(`/paymentlinks/${encodeURIComponent(matches[0].id)}`);
     if (link.order_code !== order.number || link.cart_settings?.total_cost !== order.total ||

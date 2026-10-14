@@ -186,7 +186,7 @@ globalThis.fetch = async (input, options = {}) => {
       return Response.json(link);
     }
     if (url.pathname.endsWith("/paymentlinks") && (!options.method || options.method === "GET"))
-      return Response.json({ data: [...providerLinks.values()].filter(link => link.name === url.searchParams.get("name")) });
+      return Response.json({ content: [...providerLinks.values()].filter(link => link.name === url.searchParams.get("name")).map(({ id, name, status }) => ({ id, name, status })) });
     if (url.pathname.endsWith("/orders/or_offline"))
       return Response.json(provider);
     if (url.pathname.endsWith("/orders"))

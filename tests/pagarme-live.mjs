@@ -62,6 +62,8 @@ if (process.argv.includes("--drafts")) {
       assert.equal(saved.order_code, order.number);
       assert.equal(saved.max_sessions, 1);
       assert.equal(saved.max_paid_sessions, 1);
+      const found = await api(`/paymentlinks?name=${encodeURIComponent(payload.name)}&per_page=30`);
+      assert(found.content.some(link => link.id === first.id && link.name === payload.name), "A API deve permitir localizar o link por nome após perda de resposta; o código é conferido na consulta detalhada");
       if (method === "credit_card") assert.deepEqual(saved.payment_settings.credit_card_settings.installments, payload.payment_settings.credit_card_settings.installments);
       const repeated = await api("/paymentlinks", options);
       if (repeated.id) created.add(repeated.id);
