@@ -54,6 +54,8 @@ await pg.exec(
 
 globalThis.__shopEnv = {
   DATABASE_PROVIDER: "supabase",
+  PAYMENT_PROVIDER: "pagarme",
+  SITE_URL: "https://shop.example",
   SUPABASE_URL: "https://offline-test.supabase.co",
   SUPABASE_SECRET_KEY: "sb_secret_offline_fixture",
   PAGARME_SECRET_KEY: "sk_live_fake_for_offline_tests",
@@ -86,7 +88,7 @@ const compiled = await build({
         b.onLoad({ filter: /.*/, namespace: "fixture" }, (a) => ({
           contents:
             a.path === "env"
-              ? "export const env=globalThis.__shopEnv"
+              ? "export const env=globalThis.__shopEnv; export const siteOrigin=()=>env.SITE_URL;"
               : "export async function getStoreUser(){return globalThis.__shopUser}",
           loader: "js",
         }));

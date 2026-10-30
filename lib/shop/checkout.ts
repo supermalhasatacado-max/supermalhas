@@ -14,10 +14,12 @@ import {
   event,
   getOrder,
   paymentEnvironment,
+  paymentProvider,
   sandboxEnabled,
 } from "./server";
 import { createPaymentLink, installmentTotals } from "./payments";
 import { createTransparentPayment, transparentCheckoutEnabled } from "./transparent-payments";
+import { picpayCardReady } from "./picpay";
 
 export async function checkout(request: Request, input: unknown) {
   const data = checkoutSchema.parse(input),
@@ -61,6 +63,10 @@ export async function checkout(request: Request, input: unknown) {
     number = `SM${new Date().getFullYear()}-${uid().replaceAll("-", "").slice(0, 8).toUpperCase()}`,
     stamp = now();
   const total = subtotal - discount.amount + shipping.amount;
+  if (paymentProvider() === "picpay" && !["pix", "credit_card", "wallet"].includes(data.paymentMethod))
+    throw new ShopError("Escolha Pix, cartão ou carteira PicPay.");
+  if (!data.demo && paymentProvider() === "picpay" && data.paymentMethod === "credit_card" && !picpayCardReady())
+    throw new ShopError("O cartão está em configuração. Escolha Pix ou carteira PicPay.", 409);
   const transparent = !data.demo && transparentCheckoutEnabled();
   const plans = installmentTotals(total, s);
   const selectedInstallments = data.payment?.installments || 1;
@@ -68,11 +74,12 @@ export async function checkout(request: Request, input: unknown) {
     throw new ShopError("Preencha os dados do cartão para continuar.");
   if (transparent && !plans.some(p => p.number === selectedInstallments)) throw new ShopError("Parcelamento inválido.");
   const paymentConfig = {
+    provider: paymentProvider(),
     ...(transparent ? { checkout: "transparent" as const, selectedInstallments } : {}),
     installments: plans,
     pixMinutes: s.pixMinutes,
     boletoDays: s.boletoDays,
-    expiresAt: new Date(Date.now() + s.boletoDays * 86400000).toISOString(),
+    expiresAt: new Date(Date.now() + (paymentProvider() === "picpay" && data.paymentMethod !== "credit_card" ? s.pixMinutes * 60000 : s.boletoDays * 86400000)).toISOString(),
   };
   const checks = Array.from(quantities, ([productId, qty]) => ({
     productId,
@@ -174,7 +181,7 @@ export async function checkout(request: Request, input: unknown) {
     data.demo
       ? "Pedido demonstrativo criado. Nenhuma cobrança ou baixa de estoque."
       : sandbox
-        ? "Pedido de teste Pagar.me criado. Nenhuma baixa de estoque real."
+        ? "Pedido de homologação criado. Nenhuma baixa de estoque real."
         : "Pedido recebido e estoque reservado.",
   );
   // Read directly: the guest cookie does not exist on the incoming request yet.
@@ -187,7 +194,7 @@ export async function checkout(request: Request, input: unknown) {
   if (!data.demo) {
     try {
       if (transparent) {
-        await createTransparentPayment(order, data.payment?.cardToken);
+        await createTransparentPayment(order, data.payment?.cardToken, request);
         return { order: await getOrder(id, request), cookie: who.cookie };
       }
       order.payment_link = await createPaymentLink(

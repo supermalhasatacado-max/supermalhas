@@ -8,20 +8,20 @@ Entre em `/admin` com sua conta da loja, autenticada pelo Supabase e com e-mail 
 2. **Produtos e estoque:** informe o estoque disponível em pacotes, preços, descrições, características e fotos. Use o envio de imagem para JPG, PNG ou WebP de até 4 MB. Publique ou oculte produtos e escolha os destaques.
 3. **Frete e entrega:** cadastre nome do serviço, estados atendidos, preço, prazo mínimo/máximo e eventual frete grátis por valor. São regras comerciais definidas por você; o cálculo não consulta uma transportadora. Publique a tabela de medidas reais.
 4. **Políticas e conteúdo:** escreva os textos oficiais de entrega, trocas, privacidade, termos e apresentação da empresa. As políticas iniciais estão aguardando estes textos.
-5. **Pagamentos:** confira o ambiente, validade de Pix e boleto e as condições de parcelamento. A chave é configurada no ambiente protegido do servidor. Consulte `PAGAMENTOS.md`.
+5. **Pagamentos:** confira o ambiente, validade de Pix e carteira PicPay e as condições de parcelamento. A chave é configurada no ambiente protegido do servidor. Consulte `PAGAMENTOS.md`.
 6. **Preparar lançamento:** confirme estoque, revise as pendências e ative as vendas. A ativação é recusada se faltar chave de produção, dados fiscais válidos, atendimento, frete, estoque confirmado ou políticas. A publicação na Vercel usa o domínio oficial.
 
 ## Pedidos
 
 O quadro inicial mostra receita de pagamentos aprovados, quantidade de pedidos reais, estoque disponível e mensagens. Pedidos demonstrativos e sandbox são identificados e não entram na receita. A listagem mostra até 500 pedidos recentes e pode ser filtrada e exportada em CSV.
 
-Abra um pedido para consultar comprador, endereço, itens e distribuição por tamanho. Confira o pagamento pelo Pagar.me antes de separar. Cadastre transportadora e rastreio para marcar **Em transporte** e depois **Entregue**. O link HTTPS da nota fiscal pode ser incluído após sua emissão.
+Abra um pedido para consultar comprador, endereço, itens e distribuição por tamanho. Confira o pagamento pelo provedor original do pedido antes de separar. Cadastre transportadora e rastreio para marcar **Em transporte** e depois **Entregue**. O link HTTPS da nota fiscal pode ser incluído após sua emissão.
 
 A reserva é descontada ao criar uma compra real. Pedidos cancelados ou recusados devolvem sua reserva uma única vez. Um estorno depois da postagem não devolve peças ao estoque automaticamente; confira o recebimento físico e ajuste o estoque quando apropriado. Um pagamento recebido após liberação da reserva fica **Aguardando conferência**.
 
-O botão **Cancelar tentativa sem pagamento** desativa o link e consulta o provedor. Uma cobrança pendente de Pix/boleto mantém a reserva até confirmação, mesmo com o link cancelado. Estornos de pagamentos aprovados são feitos no painel Pagar.me e depois sincronizados aqui.
+No PicPay, o cancelamento de uma cobrança pendente exige atendimento: o endpoint de cancelamento também pode estornar uma cobrança recebida durante a operação. A loja mantém a reserva até confirmação de expiração/cancelamento pelo provedor. Estornos financeiros são feitos no painel PicPay e depois sincronizados aqui. Pedidos anteriores permanecem no Pagar.me.
 
-Ao abrir a loja, a manutenção em segundo plano confere até três reservas vencidas por minuto. Links expirados sem nenhuma sessão são cancelados e liberados. Um boleto emitido não é cancelado somente porque o link expirou. Também é possível conferir pedidos individualmente no painel.
+Ao abrir a loja, a manutenção em segundo plano consulta reservas vencidas. O relógio local nunca aprova ou cancela uma cobrança: o PicPay precisa confirmar o estado. Também é possível conferir pedidos individualmente no painel.
 
 ## Atendimento e relacionamento
 
@@ -31,7 +31,7 @@ O Resend está conectado ao domínio oficial, com a chave privada na Vercel e o 
 
 ## Testar a experiência
 
-Sem chave, o pré-lançamento oferece compras demonstrativas. O administrador pode simular pagamento aprovado/recusado no pedido. Com uma chave `sk_test_...` e ambiente `test`, o checkout passa a utilizar o sandbox Pagar.me. A página identifica o teste e os pedidos não consomem estoque real.
+Sem credenciais PicPay, novas cobranças ficam indisponíveis. Homologação usa `PICPAY_ENVIRONMENT=test` e credenciais próprias de sandbox. É preciso desativar vendas reais e ativar o ambiente de testes nas configurações. Esses pedidos não consomem estoque real. As verificações offline podem ser executadas com `npm run test:picpay`.
 
 O cliente pode comprar como visitante. Ao entrar na conta no mesmo navegador, seus pedidos são vinculados à conta autenticada. Favoritos e carrinho permanecem neste navegador.
 

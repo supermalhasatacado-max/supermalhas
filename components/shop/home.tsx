@@ -246,7 +246,7 @@ export function Home() {
             },
             {
               q: "Como funciona o pagamento?",
-              a: `O pagamento é processado pelo Pagar.me. Você pode escolher Pix, boleto ou cartão em até ${data.settings.maxInstallments} parcelas. Os valores e eventuais juros são apresentados antes do pagamento.`,
+              a: `O pagamento é processado pelo PicPay. Você pode escolher Pix, carteira PicPay ou cartão em até ${data.settings.maxInstallments} parcelas. Os valores e eventuais juros são apresentados antes do pagamento.`,
             },
             {
               q: "Como calculo o frete?",

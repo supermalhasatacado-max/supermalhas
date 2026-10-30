@@ -166,7 +166,7 @@ export function Benefits({ compact = false }: { compact?: boolean }) {
         {
           icon: ShieldCheck,
           title: "Pagamento protegido",
-          text: "Processado pelo Pagar.me",
+          text: "Processado pelo PicPay",
         },
       ].map(({ icon: Icon, title, text }) => (
         <div key={title}>

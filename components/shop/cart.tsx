@@ -155,7 +155,7 @@ export function Summary({
         <ShieldCheck size={20} />
         <span>
           <strong>Pagamento protegido</strong>
-          <small>Processado pelo Pagar.me.</small>
+          <small>Processado pelo PicPay.</small>
         </span>
       </div>
     </aside>

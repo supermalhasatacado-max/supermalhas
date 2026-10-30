@@ -11,6 +11,7 @@ import {
   Truck,
   FileText,
   CreditCard,
+  ShieldCheck,
   MessageSquare,
   ArrowUpRight,
   ArrowRight,
@@ -918,15 +919,15 @@ export function AdminPage() {
                   <div className="admin-panel settings-panel">
                     <div className="admin-panel-heading">
                       <div>
-                        <h2>Integração Pagar.me</h2>
-                        <p>Pix, boleto e cartão com checkout hospedado.</p>
+                        <h2>Integração PicPay</h2>
+                        <p>Pix, carteira PicPay e cartão dentro da loja.</p>
                       </div>
                       <span
                         className={`status-pill ${data.paymentReady ? "paid" : "pending"}`}
                       >
                         {data.paymentReady
-                          ? "Chave configurada"
-                          : "Aguardando chave"}
+                          ? "Credenciais configuradas"
+                          : "Aguardando credenciais"}
                       </span>
                     </div>
                     <div className="integration-info">
@@ -940,21 +941,30 @@ export function AdminPage() {
                         </b>
                         <p>
                           A chave secreta é configurada no ambiente do servidor
-                          como PAGARME_SECRET_KEY. Ela não aparece no navegador
+                          como PICPAY_CLIENT_ID e PICPAY_CLIENT_SECRET. Elas não aparecem no navegador
                           nem no código publicado.
                         </p>
                       </div>
                     </div>
-                    <Field label="Endpoint para notificações Pagar.me">
+                    <Field label="Endpoint para notificações PicPay">
                       <input
                         readOnly
                         value={
                           typeof window === "undefined"
                             ? ""
-                            : `${window.location.origin}/api/webhooks/pagarme`
+                            : `${window.location.origin}/api/webhooks/picpay`
                         }
                       />
                     </Field>
+                    <div className="integration-info">
+                      <ShieldCheck size={28} />
+                      <div>
+                        <b>Preparação do PicPay</b>
+                        <p>Conexão da API: {data.paymentReady ? "credenciais configuradas" : "aguardando client_id e client_secret"}.</p>
+                        <p>Cartão: {data.picpayCardReady ? "SDK configurado" : "aguardando transparentToken e CNPJ da conta PicPay"}.</p>
+                        <p>Notificações: {data.picpayWebhookReady ? "token configurado" : "aguardando token do webhook"}.</p>
+                      </div>
+                    </div>
                     <p className="small muted">
                       Eventos de pedido e cobrança são conferidos por uma
                       consulta autenticada à API. O retorno do checkout, por si
@@ -987,20 +997,12 @@ export function AdminPage() {
                         onChange={(v) => set("installmentInterest", Number(v))}
                       />
                       <AdminInput
-                        label="Validade do Pix (minutos)"
+                        label="Validade do Pix e carteira (minutos)"
                         type="number"
                         min={10}
                         max={1440}
                         value={settings.pixMinutes}
                         onChange={(v) => set("pixMinutes", Number(v))}
-                      />
-                      <AdminInput
-                        label="Vencimento do boleto (dias)"
-                        type="number"
-                        min={1}
-                        max={10}
-                        value={settings.boletoDays}
-                        onChange={(v) => set("boletoDays", Number(v))}
                       />
                     </div>
                     <p className="small muted">
@@ -1173,7 +1175,7 @@ export function AdminPage() {
                         href: "/admin/politicas",
                       },
                       {
-                        title: "Pagar.me em produção",
+                        title: "PicPay em produção",
                         done:
                           data.paymentReady &&
                           data.paymentEnvironment === "production",
@@ -1880,7 +1882,7 @@ function OrderEditor({
               }}
             >
               <RefreshCw size={15} />
-              Conferir no Pagar.me
+              Conferir pagamento
             </Button>
           )}
         </div>

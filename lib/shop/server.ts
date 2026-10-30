@@ -107,18 +107,32 @@ export async function requireAdmin() {
   if (!(await isAdmin()))
     throw new ShopError("Acesso restrito aos administradores da loja.", 403);
 }
-export function paymentEnvironment() {
+export function legacyPaymentEnvironment() {
   const environment = env.PAGARME_ENVIRONMENT || (env.PAGARME_SECRET_KEY?.startsWith("sk_test") ? "test" : "production");
   if (!["test", "production"].includes(environment) || (env.PAGARME_SECRET_KEY &&
     (!env.PAGARME_SECRET_KEY.startsWith("sk_") || env.PAGARME_SECRET_KEY.startsWith("sk_test") !== (environment === "test"))))
     throw new ShopError("A chave e o ambiente Pagar.me precisam corresponder. Confira a configuração do servidor.", 503);
   return environment;
 }
+export function paymentProvider(): "picpay" | "pagarme" {
+  return env.PAYMENT_PROVIDER === "pagarme" ? "pagarme" : "picpay";
+}
+export function paymentEnvironment() {
+  if (paymentProvider() === "pagarme") return legacyPaymentEnvironment();
+  const value = env.PICPAY_ENVIRONMENT || "production";
+  if (value !== "production" && value !== "test")
+    throw new ShopError("Confira o ambiente PicPay no servidor.", 503);
+  return value;
+}
+export function paymentReady() {
+  return paymentProvider() === "pagarme" ? !!env.PAGARME_SECRET_KEY :
+    !!env.PICPAY_CLIENT_ID?.trim() && !!env.PICPAY_CLIENT_SECRET?.trim();
+}
 export function sandboxEnabled(s: StoreSettings) {
   return (
     !s.salesEnabled &&
     s.demoEnabled &&
-    !!env.PAGARME_SECRET_KEY &&
+    paymentReady() &&
     paymentEnvironment() === "test"
   );
 }
@@ -139,9 +153,11 @@ export async function claimGuestOrders(request: Request) {
 }
 export function launchIssues(s: StoreSettings) {
   const issues: string[] = [];
-  if (!env.PAGARME_SECRET_KEY) issues.push("Configurar chave Pagar.me");
+  if (!paymentReady()) issues.push("Configurar credenciais PicPay");
+  if (paymentProvider() === "picpay" && !env.PICPAY_WEBHOOK_TOKEN)
+    issues.push("Configurar token de notificações PicPay");
   if (paymentEnvironment() !== "production")
-    issues.push("Validar e ativar Pagar.me em produção");
+    issues.push("Validar e ativar PicPay em produção");
   if (!s.legalName || !validDocument(s.cnpj, "company"))
     issues.push("Completar razão social e CNPJ válido");
   if (!s.email) issues.push("Definir e-mail de atendimento");

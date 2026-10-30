@@ -7,6 +7,9 @@ const sources = [
   "lib/shop/server.ts",
   "lib/shop/checkout.ts",
   "lib/shop/payments.ts",
+  "lib/shop/pagarme-payments.ts",
+  "lib/shop/pagarme-transparent-payments.ts",
+  "lib/shop/picpay.ts",
   "app/api/shop/[...path]/route.ts",
 ];
 const queries = new Set();

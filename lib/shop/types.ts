@@ -61,6 +61,7 @@ export type OrderItem = CartItem & {
 };
 export type PaymentDetails = { method: string; qrCode?: string; qrCodeUrl?: string; barcode?: string; boletoUrl?: string; expiresAt?: string };
 export type PaymentConfig = {
+  provider?: "picpay" | "pagarme";
   checkout?: "hosted" | "transparent";
   selectedInstallments?: number;
   installments: { number: number; total: number }[];
@@ -122,6 +123,11 @@ export type ShippingQuote = {
   demo?: boolean;
 };
 export type Bootstrap = {
+  paymentProvider?: "picpay" | "pagarme";
+  picpayCardReady?: boolean;
+  picpayWebhookReady?: boolean;
+  picpayMerchantCnpj?: string;
+  picpayTransparentToken?: string;
   transparentCheckout?: boolean;
   pagarmePublicKey?: string;
   products: Product[];

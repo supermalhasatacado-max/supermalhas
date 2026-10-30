@@ -24,6 +24,8 @@ import {
   uid,
   now,
   paymentEnvironment,
+  paymentProvider,
+  paymentReady,
   sandboxEnabled,
   claimGuestOrders,
 } from "@/lib/shop/server";
@@ -39,6 +41,7 @@ import {
 import { checkout } from "@/lib/shop/checkout";
 import { createTransparentPayment, transparentCheckoutEnabled } from "@/lib/shop/transparent-payments";
 import { transparentPaymentSchema } from "@/lib/shop/validation";
+import { picpayCardReady } from "@/lib/shop/picpay";
 import {
   createPaymentLink,
   syncOrder,
@@ -59,7 +62,7 @@ async function handle(request: Request) {
     let data: any;
     let cookie: string | null = null;
     if (method === "GET" && path === "bootstrap") {
-      if (env.PAGARME_SECRET_KEY) after(async () => {
+      if (paymentReady() || env.PAGARME_SECRET_KEY) after(async () => {
         try { await reconcileExpiredOrders(); }
         catch { console.error("Não foi possível reconciliar reservas pendentes."); }
       });
@@ -74,9 +77,14 @@ async function handle(request: Request) {
         settings: admin ? settings : { ...publicSettings, fiscalEmail: "" },
         user: await getStoreUser(),
         admin,
-        paymentReady: !!env.PAGARME_SECRET_KEY,
+        paymentReady: paymentReady(),
+        paymentProvider: paymentProvider(),
+        picpayCardReady: picpayCardReady(),
+        picpayWebhookReady: !!env.PICPAY_WEBHOOK_TOKEN,
+        picpayMerchantCnpj: picpayCardReady() ? env.PICPAY_MERCHANT_CNPJ : undefined,
+        picpayTransparentToken: picpayCardReady() ? env.PICPAY_TRANSPARENT_TOKEN : undefined,
         transparentCheckout: transparentCheckoutEnabled(),
-        pagarmePublicKey: transparentCheckoutEnabled() ? env.PAGARME_PUBLIC_KEY : undefined,
+        pagarmePublicKey: paymentProvider() === "pagarme" && transparentCheckoutEnabled() ? env.PAGARME_PUBLIC_KEY : undefined,
         paymentEnvironment: paymentEnvironment(),
         emailReady: !!env.RESEND_API_KEY && !!settings.emailFrom,
         launchIssues: admin ? launchIssues(settings) : [],
@@ -161,7 +169,7 @@ async function handle(request: Request) {
       const order = await getOrder(path.split("/")[1], request);
       if (order.payment_config?.checkout === "transparent") {
         const input = transparentPaymentSchema.parse(await jsonBody(request));
-        await createTransparentPayment(order, input.cardToken);
+        await createTransparentPayment(order, input.cardToken, request);
         data = { order: await getOrder(order.id, request) };
       } else data = { url: await createPaymentLink(order, new URL(request.url).origin) };
     } else if (/^orders\/[^/]+\/cancel$/.test(path) && method === "POST") {

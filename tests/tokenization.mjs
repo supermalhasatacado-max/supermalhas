@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { build } from "esbuild";
-const compiled = await build({ stdin: { contents: "export * from './lib/shop/tokenize-card';", resolveDir: process.cwd() }, bundle: true, write: false, platform: "node", format: "esm" });
+const compiled = await build({ stdin: { contents: "export * from './lib/shop/pagarme-tokenize-card';", resolveDir: process.cwd() }, bundle: true, write: false, platform: "node", format: "esm" });
 const { tokenizeCard } = await import("data:text/javascript;base64," + Buffer.from(compiled.outputFiles[0].text).toString("base64"));
 const fields = { number: { value: "4000 0000 0000 0010" }, holder_name: { value: "CLIENTE EXEMPLO" }, expiry: { value: "12/2099" }, cvv: { value: "123" } };
 const form = { querySelector: selector => fields[selector.match(/"([a-z_]+)"/)[1]], querySelectorAll: () => Object.values(fields) };

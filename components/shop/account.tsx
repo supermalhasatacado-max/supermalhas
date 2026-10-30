@@ -284,7 +284,7 @@ export function OrderPage({ id }: { id: string }) {
           <p>
             {paid
                   ? "Agora vamos preparar suas camisetas. Você pode acompanhar cada etapa por aqui."
-                  : "A confirmação da compra depende da aprovação do pagamento pelo Pagar.me."}
+                  : `A confirmação da compra depende da aprovação do pagamento pelo ${order.payment_config?.provider === "picpay" ? "PicPay" : "Pagar.me"}.`}
           </p>
         </div>
         <span>
@@ -301,7 +301,7 @@ export function OrderPage({ id }: { id: string }) {
               <span>
                 <h2>{status}</h2>
                 <p>
-                  {`Forma de pagamento: ${order.payment_method === "credit_card" ? "Cartão de crédito" : order.payment_method === "boleto" ? "Boleto" : "Pix"}.`}
+                  {`Forma de pagamento: ${order.payment_method === "credit_card" ? "Cartão de crédito" : order.payment_method === "boleto" ? "Boleto" : order.payment_method === "wallet" ? "Carteira PicPay" : "Pix"}.`}
                 </p>
               </span>
               <span className={`status-pill ${order.payment_status}`}>
@@ -351,7 +351,7 @@ export function OrderPage({ id }: { id: string }) {
           )}
           {order.charged_total && order.charged_total !== order.total && (
             <p className="info-note">
-              Valor confirmado pelo Pagar.me, incluindo juros:{" "}
+              Valor confirmado pelo provedor, incluindo juros:{" "}
               <b>{money(order.charged_total)}</b>.
             </p>
           )}

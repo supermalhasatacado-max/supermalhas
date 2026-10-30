@@ -13,8 +13,9 @@
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "drizzle-kit generate",
     "test:supabase": "node scripts/supabase-contract.mjs --check && node tests/supabase.mjs",
-    "test": "npm run test:supabase && node tests/auth.mjs && node tests/webhooks.mjs && node tests/tokenization.mjs",
-    "test:pagarme": "node --env-file-if-exists=.env.local tests/pagarme-live.mjs"
+    "test": "npm run test:supabase && node tests/auth.mjs && node tests/webhooks.mjs && node tests/tokenization.mjs && node tests/picpay.mjs && node tests/picpay-tokenization.mjs",
+    "test:pagarme": "node --env-file-if-exists=.env.local tests/pagarme-live.mjs",
+    "test:picpay": "node tests/picpay.mjs && node tests/picpay-tokenization.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
