@@ -150,11 +150,16 @@ try {
   for (const secret of ['card_t/offline-fixture', 'offline-secret', 'offline-access-token', 'offline-webhook-token']) assert(!persisted.includes(secret), 'Credentials/tokens must never reach database or events');
   const policiesBefore = { ...settings, privacyPolicy: 'Pagamentos Pagar.me. Frete separado.', terms: 'Pix, boleto e cartão são processados pelo Pagar.me. Para Pix e boleto, respeite os vencimentos exibidos.' };
   await shop.db().prepare("UPDATE settings SET data=? WHERE key='store'").bind(JSON.stringify(policiesBefore)).run();
+  globalThis.__picpayEnv.PAYMENT_PROVIDER = 'pagarme';
+  assert.equal((await shop.getSettings()).privacyPolicy, policiesBefore.privacyPolicy, 'Preparing PicPay cannot change the running legacy storefront policies');
+  globalThis.__picpayEnv.PAYMENT_PROVIDER = 'picpay';
+  const presented = await shop.getSettings();
+  assert.equal(presented.privacyPolicy, 'Pagamentos PicPay. Frete separado.');
+  assert(presented.terms.includes('Pix, carteira PicPay e cartão são processados pelo PicPay.'));
+  for (const key of Object.keys(settings).filter(key => !['privacyPolicy', 'terms'].includes(key))) assert.deepEqual(presented[key], settings[key]);
   await pg.exec('RESET ROLE');
   await pg.exec(readFileSync('supabase/migrations/202610300001_picpay_wallet.sql', 'utf8'));
   const migrated = (await query("SELECT data FROM supermalhas.settings WHERE key='store'"))[0].data;
-  assert.equal(migrated.privacyPolicy, 'Pagamentos PicPay. Frete separado.');
-  assert(migrated.terms.includes('Pix, carteira PicPay e cartão são processados pelo PicPay.'));
-  for (const key of Object.keys(settings).filter(key => !['privacyPolicy', 'terms'].includes(key))) assert.deepEqual(migrated[key], settings[key]);
+  assert.deepEqual(migrated, policiesBefore, 'Wallet schema preparation must preserve all running merchant settings');
   console.log('PASS: PicPay OAuth cache, Pix/wallet/card, server totals, immutable provider, status/refund verification, inventory, timeout recovery, concurrent deduplication, webhook authentication, forged events and token privacy.');
 } finally { await pg.close(); }

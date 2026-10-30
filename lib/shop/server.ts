@@ -82,7 +82,18 @@ export async function getSettings(): Promise<StoreSettings> {
   const row = await db()
     .prepare("SELECT data FROM settings WHERE key='store'")
     .first<{ data: string }>();
-  return { ...defaultSettings, ...JSON.parse(row?.data || "{}") };
+  const settings = { ...defaultSettings, ...JSON.parse(row?.data || "{}") } as StoreSettings;
+  if (paymentProvider() !== "picpay") return settings;
+  // Preparing the wallet schema must not rename the gateway in the running
+  // Pagar.me storefront. Present the current gateway's policy text only after
+  // the PicPay application is deployed; other merchant settings stay intact.
+  return {
+    ...settings,
+    privacyPolicy: settings.privacyPolicy.replaceAll("Pagar.me", "PicPay"),
+    terms: settings.terms.replaceAll("Pagar.me", "PicPay")
+      .replace("Pix, boleto e cartão", "Pix, carteira PicPay e cartão")
+      .replace("Para Pix e boleto, respeite os vencimentos exibidos.", "Para Pix e carteira PicPay, respeite os vencimentos exibidos."),
+  };
 }
 export async function getProducts(all = false): Promise<Product[]> {
   const r = await db()

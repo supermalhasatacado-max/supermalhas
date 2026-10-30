@@ -22,7 +22,7 @@ Os endereços seguem o [módulo oficial PicPay](https://github.com/PicPay/ecomme
 
 ## Banco de dados e publicação
 
-Antes de habilitar a carteira, aplique `supabase/migrations/202610300001_picpay_wallet.sql` no projeto Supabase. A alteração permite o método `wallet` e preserva as compras antigas. O catálogo fechado de 44 operações RPC continua compatível; nenhuma função de SQL arbitrário ou permissão pública foi adicionada.
+Antes de habilitar a carteira, aplique `supabase/migrations/202610300001_picpay_wallet.sql` no projeto Supabase. A alteração permite o método `wallet` e preserva as compras antigas e as configurações da operação atual. As referências ao gateway nas políticas são apresentadas como PicPay somente quando a aplicação PicPay estiver publicada; preparar o banco não altera o texto da loja Pagar.me em operação. O catálogo fechado de 44 operações RPC continua compatível; nenhuma função de SQL arbitrário ou permissão pública foi adicionada.
 
 Publique o código na Vercel após aplicar a migração. Guarde as variáveis antigas `PAGARME_SECRET_KEY`, `PAGARME_ENVIRONMENT` e eventual `PAGARME_WEBHOOK_SECRET` enquanto houver pedidos antigos a conciliar; elas não habilitam silenciosamente novas compras Pagar.me. O provedor e o parcelamento são registrados no `payment_config` de cada novo pedido. Ausência de `provider` em pedidos anteriores significa Pagar.me. Nunca converter a cobrança de um pedido existente para outro gateway.
 
