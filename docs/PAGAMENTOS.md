@@ -1,69 +1,66 @@
-# Pagar.me: configuração e homologação
+# PicPay: configuração e homologação
 
-## Integração preparada
+Novas compras usam o **Gateway PicPay / Checkout API**, com Pix, carteira PicPay e cartão. O cliente paga na loja; cartões são tokenizados pelo SDK oficial diretamente no PicPay. O servidor recebe somente o token temporário, nunca PAN/CVV. Boleto não faz parte desta API e permanece disponível apenas para consultar pedidos antigos.
 
-A loja suporta checkout transparente pela API v5 de pedidos. Pix e boleto são exibidos dentro da loja; o cartão é tokenizado diretamente pelo navegador na API Pagar.me, usando a chave pública. O servidor recebe somente o token temporário, converte-o em `card_id` vinculado ao comprador e cria o pedido, compatível com o fluxo PSP. PAN e CVV não são enviados ao servidor da loja, a logs, eventos ou banco de dados. O checkout hospedado é preservado para pedidos anteriores e como configuração alternativa.
+## Credenciais de configuração
 
-Para ativar o novo fluxo, configure `PAGARME_CHECKOUT_MODE=transparent` e `PAGARME_PUBLIC_KEY=pk_...` da mesma conta na Vercel e republique. `hosted` mantém o fluxo anterior. O modo, as parcelas e os totais ficam congelados no pedido, portanto uma mudança de configuração não troca a modalidade de pedidos existentes. A chave pública pode ser exposta ao navegador; a chave secreta continua exclusiva do servidor. A autorização do domínio deve ser conferida no Pagar.me.
-
-O cliente recebe QR Code/copia e cola do Pix, linha digitável e link de boleto, ou o estado de confirmação do cartão, na própria página. A consulta periódica do pedido confirma o pagamento pela API autenticada. A confirmação por webhook continua recomendada; o recebimento real de notificações ainda depende de cadastro e validação no painel do provedor.
-
-A criação direta também usa uma trava durável por pedido. Uma resposta perdida não autoriza outra cobrança: a loja procura o pedido pelo código antes de prosseguir. Os tokens não são persistidos. Recusas de cartão liberam a reserva de estoque; cancelamentos de cobranças diretas emitidas são encaminhados ao atendimento para conferência no Pagar.me, evitando estornos involuntários de pagamentos recebidos durante um cancelamento.
-
-O servidor transmite o total em centavos, incluindo frete com valor definido e cupom. Na modalidade a combinar, o transporte é explicitamente pago à parte e fica fora do total dos produtos; valor e prazo devem ser combinados com o SAC antes do pagamento. Cada link permite um pedido e uma aprovação. Preços, grade, condições de parcelamento, validade e endereço ficam registrados no pedido. Alterações futuras no painel não modificam condições anteriores.
-
-O endpoint `/paymentlinks` foi observado criando links diferentes para POSTs com a mesma `Idempotency-Key`. A loja aplica uma trava durável própria em `order_events`, compartilhada entre instâncias. Após timeout ou resposta inconclusiva, procura o link pelo nome e código do pedido e confere valor e método antes de associá-lo. Não dispara outro POST nesse caso. Uma rejeição explícita HTTP 400/401/403/404/422 permite nova tentativa. Se a consulta continuar inconclusiva, o pedido requer conferência pelo atendimento; a loja não presume que a criação falhou.
-
-## Variáveis protegidas
+Configure na Vercel, no ambiente correspondente, sem prefixo `NEXT_PUBLIC_`:
 
 | Variável | Finalidade |
 | --- | --- |
-| `PAGARME_SECRET_KEY` | Chave secreta da conta; apenas no servidor. |
-| `PAGARME_ENVIRONMENT` | `test` para sandbox; `production` para cobrança real. |
-| `PAGARME_CHECKOUT_MODE` | `transparent` para pagamento na loja; `hosted` para checkout hospedado. |
-| `PAGARME_PUBLIC_KEY` | Chave pública `pk_...` da mesma conta, usada exclusivamente para tokenização no navegador. |
-| `ADMIN_EMAILS` | Administradores autorizados. |
-| `PAGARME_WEBHOOK_SECRET` | Opcional, somente se as notificações incluírem `x-webhook-secret` com o valor configurado. |
-| `RESEND_API_KEY` | Opcional, envio de e-mails após pagamento e postagem. |
+| `PAYMENT_PROVIDER=picpay` | Provedor de novas compras; também é o padrão quando ausente. |
+| `PICPAY_ENVIRONMENT` | `test` para homologação; `production` para cobrança real. |
+| `PICPAY_CLIENT_ID` | Identificador da integração **Checkout** no painel PicPay. |
+| `PICPAY_CLIENT_SECRET` | Segredo OAuth, exclusivo do servidor. |
+| `PICPAY_MERCHANT_CNPJ` | CNPJ da conta PicPay, apenas dígitos. Cadastro informado: `58312831000189`. |
+| `PICPAY_TRANSPARENT_TOKEN` | `transparentToken` do SDK, solicitado ao PicPay. Destinado à tokenização no navegador; diferente do segredo OAuth e do token de acesso. |
+| `PICPAY_WEBHOOK_TOKEN` | Token gerado ao cadastrar as notificações no painel PicPay. Exclusivo do servidor. |
 
-As bases oficiais utilizadas são `https://sdx-api.pagar.me/core/v5` e `https://api.pagar.me/core/v5`. A chave de teste identifica automaticamente o ambiente se a variável de ambiente estiver ausente. Prefira configurar explicitamente.
+O cartão só é oferecido após configurar CNPJ e token do SDK. Pix/carteira usam o par OAuth; vendas reais também exigem o token do webhook. A presença de variáveis indica configuração disponível, não comprova autorização comercial nem liquidação de pagamentos.
 
-## Homologação após receber a chave
+Os endereços seguem o [módulo oficial PicPay](https://github.com/PicPay/ecommerce-integration-magento2/blob/main/etc/config.xml): produção `https://checkout-api.picpay.com`, sandbox `https://checkout-api-sandbox.picpay.com`; autenticação `/oauth2/token`, operações `/api/v1/charge/...`. O token OAuth é guardado somente na memória do servidor, com renovação antes do vencimento e compartilhamento de renovações concorrentes na mesma instância.
 
-1. Configurar a chave de teste e o ambiente `test`, mantendo vendas reais desativadas e testes permitidos.
-2. Executar uma compra de teste de cada forma de pagamento no checkout hospedado. Para cartão, seguir os dados de aprovação e recusa oficiais do Pagar.me. Não usar dados financeiros reais no sandbox.
-3. Confirmar retorno ao pedido, notificações, aprovação, recusa, duplicidade de notificação, cancelamento e estorno. Conferir o valor final das parcelas na página do provedor.
-4. Após homologação, configurar chave e ambiente de produção, revisar o contrato comercial Pagar.me, preencher a operação no painel e conferir a publicação no domínio oficial.
-5. Cadastrar o webhook público abaixo no dashboard Pagar.me e validar seu recebimento antes de ativar vendas.
+## Banco de dados e publicação
+
+Antes de habilitar a carteira, aplique `supabase/migrations/202610300001_picpay_wallet.sql` no projeto Supabase. A alteração permite o método `wallet` e preserva as compras antigas e as configurações da operação atual. As referências ao gateway nas políticas são apresentadas como PicPay somente quando a aplicação PicPay estiver publicada; preparar o banco não altera o texto da loja Pagar.me em operação. O catálogo fechado de 44 operações RPC continua compatível; nenhuma função de SQL arbitrário ou permissão pública foi adicionada.
+
+Publique o código na Vercel após aplicar a migração. Guarde as variáveis antigas `PAGARME_SECRET_KEY`, `PAGARME_ENVIRONMENT` e eventual `PAGARME_WEBHOOK_SECRET` enquanto houver pedidos antigos a conciliar; elas não habilitam silenciosamente novas compras Pagar.me. O provedor e o parcelamento são registrados no `payment_config` de cada novo pedido. Ausência de `provider` em pedidos anteriores significa Pagar.me. Nunca converter a cobrança de um pedido existente para outro gateway.
+
+## Notificações
+
+Cadastre no painel PicPay → Ajustes → Meu checkout → URL de notificação:
 
 ```text
-https://supermalhasatacado.com.br/api/webhooks/pagarme
+https://supermalhasatacado.com.br/api/webhooks/picpay
 ```
 
-Na Vercel, esse endpoint deve permanecer acessível ao Pagar.me; não habilitar proteção de deployment que bloqueie a loja de produção ou o webhook. A consulta autenticada pelo botão de atualização funciona sem depender da notificação.
+Copie o token gerado para `PICPAY_WEBHOOK_TOKEN`. O cabeçalho `Authorization` deve conter exatamente esse token (não é o token OAuth e não recebe automaticamente o prefixo `Bearer`). O endpoint exige autenticação e aceita eventos `PAYMENT`/`REFUND` com `data.merchantChargeId`. O corpo da notificação nunca aprova a compra: a loja consulta a cobrança pela API e confere referência, valor original, método, parcelas, transações e estornos.
 
-Eventos tratados: eventos `order.*` com `data.id` e eventos de cobrança com `data.order.id`. Assine aprovação, falha, cancelamento, estorno e contestação. O handler consulta o pedido na API autenticada, valida código local, ambiente, moeda e valores permitidos e só então atualiza a loja. O corpo do webhook nunca é fonte de aprovação. Um retorno do checkout também não confirma pagamento.
+A aprovação exige cobrança e transação `PAID`. Pré-autorização e notificações antigas não aprovam o pedido. Estorno integral libera a reserva uma única vez; estorno parcial exige conferência. Pedidos postados não repõem estoque automaticamente. A consulta autenticada individual também funciona no painel e na página do pedido.
 
-Se o serviço ficar indisponível, o pedido é preservado e oferece preparação/continuação do pagamento e atualização de status. Uma tentativa recusada encerra a reserva; o cliente pode iniciar uma nova compra. Reembolsos são realizados no Pagar.me e refletidos na loja após confirmação. Peças já postadas não são restocadas automaticamente.
+## Falhas, retentativas e cancelamentos
 
-## Estado de validação
+A criação de cobrança usa trava persistente e `merchantChargeId` igual ao UUID local do pedido. Após timeout/erro ambíguo, a loja consulta a mesma referência e não repete automaticamente a cobrança. Uma rejeição explícita de validação/autorização permite corrigir e tentar novamente; recusas financeiras encerram a tentativa e liberam a reserva. Tokens de cartão, OAuth e segredos não são persistidos em pedidos/eventos nem incluídos nas mensagens de erro.
 
-Em 14/10/2026, a chave fornecida autenticou na API de produção. Pix, boleto e cartão foram validados criando links inativos (`is_building: true`), consultando total, método, código e limites e cancelando todos os links. A consulta final confirmou zero sessões de pagamento. Nenhuma cobrança real foi executada.
+Cancelar no PicPay pode também estornar uma cobrança. Por isso, o cliente solicita cancelamento ao atendimento; a loja só libera a reserva após confirmar expiração/cancelamento pelo provedor. O relógio local não é evidência financeira. O atendimento realiza estornos no painel PicPay e sincroniza o pedido na loja.
 
-`npm test` cobre banco, concorrência, reserva, cupons, autenticação, transições de pagamento, recuperação de link após perda de resposta, retentativa após rejeição explícita e webhook. Os testes de webhook verificam rejeição de configuração ausente, autenticação opcional, JSON inválido, tamanho excedido e delegação para consulta autenticada; não provam entrega de notificações reais. `tests/http.mjs` verifica a loja publicada sem criar compras.
+## Homologação depois de receber as credenciais
 
-Para repetir a verificação real com a chave no ambiente privado, use `npm run test:pagarme` (somente autenticação) ou `npm run test:pagarme -- --drafts` (cria rascunhos inativos e os cancela). Não informe a chave em argumentos de linha de comando, arquivos versionados ou logs.
+1. Aplicar a migração, configurar as variáveis e republicar. No sandbox, usar credenciais de **Teste Checkout API** e confirmar com o PicPay o `transparentToken` correspondente.
+2. Conferir os indicadores no painel → Pagamentos. Habilitar a carteira no Meu checkout da conta PicPay.
+3. No painel → Pagamentos, ativar **Permitir pedidos de homologação PicPay** e salvar. Essa opção aparece no ambiente `test`, desativa vendas reais e permite testar Pix, carteira e cartão aprovado/recusado, QR Code, parcelas, expiração, consultas e recebimento real de webhook. Os pedidos novos aparecem na conta e na página do pedido com identificação de homologação, sem promessa de envio; registros demonstrativos antigos continuam ocultos.
+4. Conferir estornos integrais/parciais, total em centavos, estoque e ausência de dados financeiros sensíveis nos registros.
+5. Configurar o ambiente de produção com as credenciais da conta habilitada e validar uma transação acompanhada pelo responsável antes de liberar a operação.
 
-A chave foi salva como segredo restrito à produção na Vercel, com `PAGARME_ENVIRONMENT=production`, e publicada no deployment `BFZ4y29b7k2j3nCjnex8a3pJaD7z`. O domínio oficial confirmou `paymentReady=true` e ambiente de produção. O responsável optou por testar manualmente em produção e solicitou o início da operação real: vendas habilitadas e modo demonstrativo desativado. A interface pública oferece somente compras reais e respeita estoque; registros anteriores sem cobrança não são apresentados como vendas ao cliente. Ainda pendentes: cadastro e comprovação de entrega do webhook real, aprovação/recusa e demais resultados do teste manual do responsável. As verificações automáticas e os links inativos não comprovam liquidação financeira real.
+## Verificação executada
 
-O cadastro operacional autorizado em 14/10/2026 está em `docs/operacao-20261014.json`. O script `scripts/configure-operation.mjs` aplica SAC, políticas e estoque de pacotes completos a uma loja ainda sem vendas, preservando os demais campos. A regra de frete depende da publicação do código que reconhece `toArrange`; só depois executar com `--include-shipping`. Não reexecutar o ajuste inicial para repor estoque de uma loja que já tenha vendido.
+`npm test` mantém os contratos antigos do Pagar.me como regressão e testa PicPay em PostgreSQL/PGlite: OAuth, pagamentos das três modalidades, total, parcelas, timeout, concorrência, reservas, recusa, expiração, estorno, referência/provedor incorretos, notificações forjadas e privacidade de tokens. `npm run test:picpay` executa somente os testes novos. São testes offline com serviços simulados; não comprovam autorização da conta nem entrega de notificações reais. Não há credenciais PicPay configuradas neste momento.
 
-## Referências oficiais
+## Fontes oficiais
 
-- [Criação de link de pagamento](https://docs.pagar.me/reference/criar-link)
-- [Checkout hospedado](https://docs.pagar.me/reference/checkout-response)
-- [Consulta de link](https://docs.pagar.me/reference/obter-link)
-- [Cancelamento de link](https://docs.pagar.me/reference/cancelar-um-link-de-pagamento)
-- [Webhooks](https://docs.pagar.me/docs/webhooks)
-- [Exemplo oficial de checkout pontual](https://docs.pagar.me/docs/checkout_pagarme_skill_order)
-- [Filtro de pedidos no SDK oficial](https://github.com/pagarme/pagarme-core-api-php/blob/master/src/Controllers/OrdersController.php)
+- [Autenticação](https://developers-business.picpay.com/checkout/docs/authentication)
+- [SDK de tokenização](https://developers-business.picpay.com/checkout/docs/transparent-checkout/sdk)
+- [Webhooks](https://developers-business.picpay.com/checkout/docs/webhook)
+- [Consulta de cobrança](https://developers-business.picpay.com/checkout/docs/api/find-charge)
+- [Sandbox](https://developers-business.picpay.com/checkout/docs/sandbox/)
+- [Endereços no módulo oficial](https://github.com/PicPay/ecommerce-integration-magento2/blob/main/etc/config.xml)

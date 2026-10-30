@@ -11,7 +11,7 @@ import {
   CreditCard,
   LockKeyhole,
   ShieldCheck,
-  Landmark,
+  Wallet,
   QrCode,
   Package,
   ExternalLink,
@@ -192,7 +192,7 @@ export function CheckoutPage() {
     }
     setBusy(true);
     try {
-      const cardToken = data.transparentCheckout && method === "credit_card" ? await tokenizeCard(paymentForm.current!, data.pagarmePublicKey) : undefined;
+      const cardToken = data.transparentCheckout && method === "credit_card" ? await tokenizeCard(paymentForm.current!, data.picpayMerchantCnpj, data.picpayTransparentToken) : undefined;
       if (saveProfile && data.user) await api("profile", { customer, address });
       const order = await api<Order>("checkout", {
         items: cart,
@@ -262,6 +262,7 @@ export function CheckoutPage() {
           Pagamento protegido
         </span>
       </div>
+      {data.sandbox && <p className="notice" role="status">Homologação PicPay: este checkout não gera cobrança real nem envio. Use somente dados de pagamento de teste fornecidos pelo PicPay.</p>}
       <div className="checkout-layout">
         <div>
           <div className="checkout-steps">
@@ -577,6 +578,7 @@ export function CheckoutPage() {
                     <CreditCard size={22} />
                     Forma de pagamento
                   </h2>
+                  {!data.paymentReady && <p className="notice" role="status">Os pagamentos estão temporariamente indisponíveis. Seu carrinho está salvo; entre em contato com o atendimento para acompanhar a liberação.</p>}
                   <div className="payment-choices">
                     {[
                       {
@@ -588,20 +590,21 @@ export function CheckoutPage() {
                       {
                         id: "credit_card",
                         title: "Cartão",
-                        sub: `Até ${data.settings.maxInstallments}x`,
+                        sub: data.picpayCardReady ? `Até ${data.settings.maxInstallments}x` : "Em configuração",
                         icon: CreditCard,
                       },
                       {
-                        id: "boleto",
-                        title: "Boleto",
-                        sub: "Pagamento à vista",
-                        icon: Landmark,
+                        id: "wallet",
+                        title: "PicPay",
+                        sub: "Use seu aplicativo",
+                        icon: Wallet,
                       },
                     ].map(({ id, title, sub, icon: Icon }) => (
                       <button
                         type="button"
                         key={id}
                         onClick={() => setMethod(id)}
+                        disabled={id === "credit_card" && !data.picpayCardReady}
                         className={method === id ? "selected" : ""}
                         aria-pressed={method === id}
                       >
@@ -616,25 +619,21 @@ export function CheckoutPage() {
                   </div>
                   <div className="payment-explanation">
                     <div className="payment-logo">
-                      pagar<span>.me</span>
+                      Pic<span>Pay</span>
                     </div>
                     <h3>
                       {method === "pix"
                         ? "Pague com Pix, com toda a praticidade."
                         : method === "credit_card"
                           ? "O parcelamento que combina com você."
-                          : "Receba seu boleto em um ambiente protegido."}
+                          : "Pague com sua carteira PicPay."}
                     </h3>
                     <p>
-                      {data.transparentCheckout ? method === "pix" ? `O QR Code e o código Pix serão exibidos aqui após confirmar o pedido, com validade de ${data.settings.pixMinutes} minutos.` : method === "boleto" ? `O boleto e a linha digitável serão exibidos aqui após confirmar o pedido, com vencimento em ${data.settings.boletoDays} dias.` : "Preencha seu cartão abaixo. Os dados serão protegidos diretamente pelo Pagar.me." : method === "pix"
-                        ? `O código Pix será gerado na etapa protegida do Pagar.me e terá validade de ${data.settings.pixMinutes} minutos. O pedido será aprovado após a confirmação do pagamento.`
-                        : method === "credit_card"
-                          ? `Os dados do cartão serão informados diretamente no Pagar.me. Até ${data.settings.freeInstallments}x sem juros. As demais opções e o valor final serão exibidos antes de pagar.`
-                          : `O boleto será gerado pelo Pagar.me com vencimento em ${data.settings.boletoDays} dias. O pedido será aprovado após a compensação.`}
+                      {method === "pix" ? `O QR Code e o código Pix serão exibidos aqui após confirmar o pedido. A validade de emissão é de ${data.settings.pixMinutes} minutos.` : method === "wallet" ? "Escaneie o QR Code no aplicativo PicPay para concluir o pagamento com sua carteira." : "Preencha seu cartão abaixo. Os dados serão protegidos diretamente pelo PicPay."}
                     </p>
                     <span>
                       <ShieldCheck size={17} />
-                      Dados financeiros processados diretamente pelo Pagar.me.
+                      Dados financeiros processados diretamente pelo PicPay.
                     </span>
                   </div>
                   {data.transparentCheckout && method === "credit_card" && <>
@@ -717,12 +716,12 @@ export function CheckoutPage() {
                   Voltar
                 </button>
               )}
-              <Button type="submit" busy={busy}>
+              <Button type="submit" busy={busy} disabled={step === 2 && !data.paymentReady}>
                 {step === 0
                   ? "Continuar para entrega"
                   : step === 1
                     ? "Escolher pagamento"
-                    : data.transparentCheckout ? method === "credit_card" ? "Pagar com cartão" : method === "pix" ? "Gerar Pix" : "Gerar boleto" : "Ir para o pagamento seguro"}
+                    : data.transparentCheckout ? method === "credit_card" ? "Pagar com cartão" : method === "pix" ? "Gerar Pix" : "Gerar QR Code PicPay" : "Ir para o pagamento seguro"}
                 {step === 2 ? (
                   <LockKeyhole size={17} />
                 ) : (

@@ -16,7 +16,7 @@ O acesso exige uma conta do Supabase com e-mail confirmado. A conta da administr
 
 ANABELA AG MODAS LTDA, CNPJ 58.312.831/0001-89, Rua Dez de Abril, s/n, Alto da Cruz, Camaçari/BA, CEP 42803-113. Os pacotes de 200, 300 e 400 peças custam R$ 5.000, R$ 7.500 e R$ 10.000.
 
-O responsável informou 2.000 peças para cada linha de pacote: 10 pacotes de 200, 6 de 300 e 5 de 400; as 200 peças restantes da linha de 300 não completam outro pacote. SAC: sac@supermalhasatacado.com.br. Políticas redigidas e cadastro operacional em `docs/operacao-20261014.json`. O frete nacional é a combinar, pago à parte, com valor e prazo acertados com o SAC antes do pagamento dos produtos. Pagar.me configurado em produção na Vercel. Vendas reais habilitadas por solicitação do responsável, que fará a conferência manual dos pagamentos em produção; validação de notificação real do webhook ainda pendente. Contatos, políticas, frete, estoque, imagens e textos são gerenciados pelo painel. Registros anteriores sem cobrança ficam fora das vendas e não são apresentados como compras válidas ao cliente.
+O responsável informou 2.000 peças para cada linha de pacote: 10 pacotes de 200, 6 de 300 e 5 de 400; as 200 peças restantes da linha de 300 não completam outro pacote. SAC: sac@supermalhasatacado.com.br. Políticas redigidas e cadastro operacional em `docs/operacao-20261014.json`. O frete nacional é a combinar, pago à parte, com valor e prazo acertados com o SAC antes do pagamento dos produtos. Gateway alterado para PicPay em 30/10/2026. A integração aguarda as credenciais Checkout, token do SDK de cartão e token do webhook. Novas cobranças ficam bloqueadas enquanto a configuração está incompleta. Pedidos anteriores continuam associados ao Pagar.me para conciliação. Contatos, políticas, frete, estoque, imagens e textos são gerenciados pelo painel. Registros anteriores sem cobrança ficam fora das vendas e não são apresentados como compras válidas ao cliente.
 
 ## Desenvolvimento
 
@@ -32,7 +32,7 @@ npm start
 
 Com o servidor ativo, `node tests/http.mjs` verifica catálogo, saúde do banco, rotas privadas e rejeição de identidade falsificada. Para um endereço remoto selecionado explicitamente, use `TEST_URL` e `TEST_ALLOW_REMOTE=true`. O teste HTTP não altera estoque/configurações nem cria pedidos ou clientes.
 
-Os testes offline executam as migrações em PostgreSQL/PGlite e verificam transações, concorrência, estoque, cupons, pagamentos simulados, propriedade dos pedidos e importação D1. Os testes de autenticação verificam sessão confirmada, e-mail verificado, restrições de chave pública e retornos seguros. Não substituem a homologação Pagar.me.
+Os testes offline executam as migrações em PostgreSQL/PGlite e verificam transações, concorrência, estoque, cupons, pagamentos simulados, propriedade dos pedidos e importação D1. Os testes de autenticação verificam sessão confirmada, e-mail verificado, restrições de chave pública e retornos seguros. Não substituem a homologação PicPay.
 
 ## Implantação
 
@@ -40,7 +40,7 @@ O repositório GitHub conecta a branch `main` ao projeto `supermalhas` na Vercel
 
 A chave pública `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` permite somente a autenticação e os acessos liberados pelas políticas. `SUPABASE_SECRET_KEY` é privada, usada exclusivamente pelo servidor. O banco comercial e o Storage não permitem acesso direto pelos clientes.
 
-`/api/health` verifica o catálogo persistido, o bucket privado e o serviço Supabase Auth com confirmação de e-mail exigida. Retorna erro se a conexão estiver incompleta; não apresenta chaves nem dados de clientes. Não valida entrega de e-mails ou credenciais Pagar.me.
+`/api/health` verifica o catálogo persistido, o bucket privado e o serviço Supabase Auth com confirmação de e-mail exigida. Retorna erro se a conexão estiver incompleta; não apresenta chaves nem dados de clientes. Não valida entrega de e-mails ou credenciais PicPay.
 
 A versão anterior em `chatgpt.site` e os arquivos históricos do Sites/D1 permanecem preservados para recuperação. A publicação atual usa Vercel; os scripts históricos do Sites não são o fluxo de build atual. Não importar dados de demonstração locais como se fossem os dados do site anterior.
 
@@ -49,7 +49,7 @@ A versão anterior em `chatgpt.site` e os arquivos históricos do Sites/D1 perma
 - [Administração](docs/ADMIN.md)
 - [Supabase e autenticação](docs/SUPABASE.md)
 - [E-mails Resend](docs/EMAILS.md)
-- [Pagamentos Pagar.me](docs/PAGAMENTOS.md)
+- [Pagamentos PicPay](docs/PAGAMENTOS.md)
 - [Imagens](docs/ASSETS.md)
 
-Valores são recalculados no servidor. A aprovação do pagamento exige consulta autenticada ao Pagar.me; o retorno do checkout e o corpo do webhook não confirmam pagamento. Estornos financeiros são feitos no Pagar.me. O link da nota fiscal emitida pode ser cadastrado no pedido.
+Valores são recalculados no servidor. A aprovação do pagamento exige consulta autenticada ao PicPay; o retorno do checkout e o corpo do webhook não confirmam pagamento. Estornos financeiros são feitos no painel do provedor original de cada pedido. O link da nota fiscal emitida pode ser cadastrado no pedido.

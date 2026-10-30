@@ -107,7 +107,7 @@ export const addressSchema = z
   })
   .strict();
 export const transparentPaymentSchema = z.object({
-  cardToken: z.string().regex(/^token_[A-Za-z0-9]+$/).max(150).optional(),
+  cardToken: z.string().regex(/^(?:token_[A-Za-z0-9]+|card_t\/[A-Za-z0-9.\/_+\-]+)$/).max(512).optional(),
   installments: z.number().int().min(1).max(12).default(1),
 }).strict();
 export const checkoutSchema = z
@@ -117,7 +117,7 @@ export const checkoutSchema = z
     address: addressSchema,
     shippingId: z.string().max(80),
     coupon: z.string().max(40).default(""),
-    paymentMethod: z.enum(["pix", "credit_card", "boleto"]),
+    paymentMethod: z.enum(["pix", "credit_card", "wallet", "boleto"]),
     requestKey: z.string().uuid(),
     termsAccepted: z.literal(true),
     demo: z.boolean(),

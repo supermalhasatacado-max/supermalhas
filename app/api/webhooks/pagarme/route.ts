@@ -2,7 +2,7 @@ import { env } from "@/lib/env";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 import { db, seed, rateLimit, ShopError } from "@/lib/shop/server";
-import { verifyProviderOrder } from "@/lib/shop/payments";
+import { verifyProviderOrder } from "@/lib/shop/pagarme-payments";
 export const dynamic = "force-dynamic";
 export async function POST(request: Request) {
   try {

@@ -7,7 +7,7 @@ const compiled = await build({
   stdin: { contents: "export * from './app/api/webhooks/pagarme/route';", resolveDir: process.cwd() },
   bundle: true, write: false, platform: "node", format: "esm",
   plugins: [{ name: "webhook-fixture", setup(b) {
-    b.onResolve({ filter: /^@\/lib\/(env|shop\/server|shop\/payments)$/ }, a => ({ path: a.path, namespace: "fixture" }));
+    b.onResolve({ filter: /^@\/lib\/(env|shop\/server|shop\/pagarme-payments)$/ }, a => ({ path: a.path, namespace: "fixture" }));
     b.onLoad({ filter: /.*/, namespace: "fixture" }, a => ({ loader: "js", contents:
       a.path.endsWith("/env") ? "export const env=globalThis.__hookEnv" :
       a.path.endsWith("/server") ? "export class ShopError extends Error { constructor(message,status=400){super(message);this.status=status} }; export const db=()=>({});export async function seed(){};export async function rateLimit(){}" :

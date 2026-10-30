@@ -221,7 +221,7 @@ export function Footer() {
             </p>
             <div className="footer-social">
               <ShieldCheck size={18} />
-              <span>Pagamento processado pelo Pagar.me</span>
+              <span>Pagamento processado pelo PicPay</span>
             </div>
           </div>
           <div>
@@ -279,7 +279,7 @@ export function Footer() {
             </span>
             <b>elo</b>
             <b>Pix</b>
-            <span>BOLETO</span>
+            <span>CARTEIRA PICPAY</span>
           </div>
         </div>
       </footer>

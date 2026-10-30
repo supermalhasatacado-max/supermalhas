@@ -47,7 +47,7 @@ Para editar, abra Authentication → Emails → Templates, selecione o modelo, a
 
 O teste autorizado para `supermalhasatacado@gmail.com`, enviado por `noreply@supermalhasatacado.com.br`, teve status **delivered** no dashboard Resend. A autenticação do servidor SMTP também passou com validação do certificado TLS, sem enviar uma segunda mensagem. Nenhum pedido ou pagamento foi criado nesse teste.
 
-A chave configurada e o remetente permitem os avisos de pagamento e postagem em pedidos reais. Pedidos demonstrativos/sandbox não enviam e-mails financeiros. O teste do serviço não substitui a homologação de pagamentos Pagar.me.
+A chave configurada e o remetente permitem os avisos de pagamento e postagem em pedidos reais. Pedidos demonstrativos/sandbox não enviam e-mails financeiros. O teste do serviço não substitui a homologação de pagamentos PicPay.
 
 Ainda é necessário concluir o cadastro, confirmar o e-mail, entrar no painel administrativo e testar a recuperação de senha com uma conta real da loja. A senha deve ser criada e enviada pelo titular diretamente no navegador. A conta de administrador do dashboard Supabase é independente da conta da loja.
 
