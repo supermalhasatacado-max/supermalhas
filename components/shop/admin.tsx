@@ -970,6 +970,10 @@ export function AdminPage() {
                       consulta autenticada à API. O retorno do checkout, por si
                       só, nunca aprova um pedido.
                     </p>
+                    {data.paymentProvider === "picpay" && data.paymentEnvironment === "test" && <label className="check-control sales-toggle">
+                      <input type="checkbox" checked={settings.demoEnabled && !settings.salesEnabled} onChange={e => setSettings(current => ({ ...current, demoEnabled: e.target.checked, ...(e.target.checked ? { salesEnabled: false } : {}) }))} />
+                      <span><b>Permitir pedidos de homologação PicPay</b><small>Desativa vendas reais e permite testar o checkout com as credenciais de sandbox, sem baixar estoque real ou enviar produtos. Salve as configurações para aplicar.</small></span>
+                    </label>}
                     <div className="form-grid">
                       <AdminInput
                         label="Máximo de parcelas"

@@ -48,7 +48,7 @@ Cancelar no PicPay pode também estornar uma cobrança. Por isso, o cliente soli
 
 1. Aplicar a migração, configurar as variáveis e republicar. No sandbox, usar credenciais de **Teste Checkout API** e confirmar com o PicPay o `transparentToken` correspondente.
 2. Conferir os indicadores no painel → Pagamentos. Habilitar a carteira no Meu checkout da conta PicPay.
-3. Com vendas reais desativadas e testes habilitados, testar Pix, carteira e cartão aprovado/recusado, QR Code, parcelas, expiração, consultas e recebimento real de webhook.
+3. No painel → Pagamentos, ativar **Permitir pedidos de homologação PicPay** e salvar. Essa opção aparece no ambiente `test`, desativa vendas reais e permite testar Pix, carteira e cartão aprovado/recusado, QR Code, parcelas, expiração, consultas e recebimento real de webhook. Os pedidos novos aparecem na conta e na página do pedido com identificação de homologação, sem promessa de envio; registros demonstrativos antigos continuam ocultos.
 4. Conferir estornos integrais/parciais, total em centavos, estoque e ausência de dados financeiros sensíveis nos registros.
 5. Configurar o ambiente de produção com as credenciais da conta habilitada e validar uma transação acompanhada pelo responsável antes de liberar a operação.
 

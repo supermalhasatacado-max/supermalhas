@@ -31,7 +31,7 @@ O Resend está conectado ao domínio oficial, com a chave privada na Vercel e o 
 
 ## Testar a experiência
 
-Sem credenciais PicPay, novas cobranças ficam indisponíveis. Homologação usa `PICPAY_ENVIRONMENT=test` e credenciais próprias de sandbox. É preciso desativar vendas reais e ativar o ambiente de testes nas configurações. Esses pedidos não consomem estoque real. As verificações offline podem ser executadas com `npm run test:picpay`.
+Sem credenciais PicPay, novas cobranças ficam indisponíveis. Homologação usa `PICPAY_ENVIRONMENT=test` e credenciais próprias de sandbox. No painel → Pagamentos, marque **Permitir pedidos de homologação PicPay** e salve; isso desativa vendas reais. Esses pedidos não consomem estoque real e podem ser acompanhados pelo comprador com identificação de teste, inclusive QR Code e status. As verificações offline podem ser executadas com `npm run test:picpay`.
 
 O cliente pode comprar como visitante. Ao entrar na conta no mesmo navegador, seus pedidos são vinculados à conta autenticada. Favoritos e carrinho permanecem neste navegador.
 

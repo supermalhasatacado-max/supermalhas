@@ -262,6 +262,7 @@ export function CheckoutPage() {
           Pagamento protegido
         </span>
       </div>
+      {data.sandbox && <p className="notice" role="status">Homologação PicPay: este checkout não gera cobrança real nem envio. Use somente dados de pagamento de teste fornecidos pelo PicPay.</p>}
       <div className="checkout-layout">
         <div>
           <div className="checkout-steps">

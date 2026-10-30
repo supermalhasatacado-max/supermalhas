@@ -48,7 +48,7 @@ export function AccountPage() {
     [favorites, setFavorites] = useState<string[]>([]);
   useEffect(() => {
     api<Order[]>("orders")
-      .then(rows => setOrders(rows.filter(order => !order.demo && !order.sandbox)))
+      .then(rows => setOrders(rows.filter(order => !order.demo && (!order.sandbox || order.payment_config?.provider === "picpay"))))
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
     try {
@@ -144,7 +144,7 @@ export function AccountPage() {
                     <header>
                       <span>
                         <b>{order.number}</b>
-                        <small>{date(order.created_at)}</small>
+                        <small>{date(order.created_at)}{order.sandbox ? " · Homologação PicPay" : ""}</small>
                       </span>
                       <span className={`status-pill ${order.payment_status}`}>
                         {paymentLabels[order.payment_status] ||
@@ -161,7 +161,7 @@ export function AccountPage() {
                           )}{" "}
                           camisetas brancas
                         </strong>
-                        <small>{fulfillmentLabels[order.fulfillment]}</small>
+                        <small>{order.sandbox ? "Teste sem cobrança real ou envio" : fulfillmentLabels[order.fulfillment]}</small>
                       </span>
                       <b>{money(order.total)}</b>
                       <ArrowRight size={19} />
@@ -244,7 +244,7 @@ export function OrderPage({ id }: { id: string }) {
         <LinkButton href="/minha-conta">Meus pedidos</LinkButton>
       </div>
     );
-  if (order.demo || order.sandbox) return <div className="container section"><Empty title="Registro sem cobrança"><p>Este registro anterior não constitui uma compra válida para pagamento ou envio.</p><LinkButton href="/minha-conta">Meus pedidos</LinkButton></Empty></div>;
+  if (order.demo || (order.sandbox && order.payment_config?.provider !== "picpay")) return <div className="container section"><Empty title="Registro sem cobrança"><p>Este registro anterior não constitui uma compra válida para pagamento ou envio.</p><LinkButton href="/minha-conta">Meus pedidos</LinkButton></Empty></div>;
   const paid = order.payment_status === "paid",
     status = paymentLabels[order.payment_status] || order.payment_status;
   const stage =
@@ -263,6 +263,7 @@ export function OrderPage({ id }: { id: string }) {
           { label: order.number },
         ]}
       />
+      {order.sandbox && <p className="notice" role="status"><strong>Homologação PicPay.</strong> Este pedido usa o ambiente de testes. Não há cobrança real, baixa do estoque real ou envio. Use somente dados de pagamento fornecidos pelo PicPay para testes.</p>}
       <div className="order-header">
         <span className={`order-success-icon ${paid ? "paid" : ""}`}>
           {paid ? <Check size={37} /> : <Package size={37} />}
@@ -273,7 +274,9 @@ export function OrderPage({ id }: { id: string }) {
             OBRIGADO PELA SUA ESCOLHA
           </span>
           <h1>
-            {paid
+            {order.sandbox
+              ? paid ? "Pagamento de teste aprovado." : "Acompanhe seu pagamento de teste."
+              : paid
               ? "Pagamento aprovado!"
               : order.payment_status === "failed"
                 ? "Vamos resolver seu pagamento."
@@ -282,7 +285,9 @@ export function OrderPage({ id }: { id: string }) {
                   : "Seu pedido foi recebido."}
           </h1>
           <p>
-            {paid
+            {order.sandbox
+                  ? "Confira o QR Code, a confirmação e as atualizações do teste abaixo. Este pedido não será separado nem enviado."
+                  : paid
                   ? "Agora vamos preparar suas camisetas. Você pode acompanhar cada etapa por aqui."
                   : `A confirmação da compra depende da aprovação do pagamento pelo ${order.payment_config?.provider === "picpay" ? "PicPay" : "Pagar.me"}.`}
           </p>
@@ -373,7 +378,7 @@ export function OrderPage({ id }: { id: string }) {
               Cancelar tentativa de compra
             </Button>
           )}
-          <div className="order-timeline">
+          {!order.sandbox && <div className="order-timeline">
             {[
               {
                 title: "Pedido recebido",
@@ -404,7 +409,7 @@ export function OrderPage({ id }: { id: string }) {
                 <small>{sub}</small>
               </div>
             ))}
-          </div>
+          </div>}
           {order.tracking_code && (
             <section className="tracking-panel">
               <Truck size={29} />
